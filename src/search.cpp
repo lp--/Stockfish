@@ -865,7 +865,7 @@ moves_loop: // When in check and at SpNode search starts from here
           &&  bestValue > VALUE_MATED_IN_MAX_PLY)
       {
           // Move count based pruning
-          if (   depth < 16 * ONE_PLY
+	if (   ( depth < 16 * ONE_PLY  ||   ( depth < 32 * ONE_PLY  && !improving ) ) 
               && moveCount >= FutilityMoveCounts[improving][depth]
               && (!threatMove || !refutes(pos, move, threatMove)))
           {
