@@ -259,7 +259,7 @@ Score Entry::update_safety(const Position& pos, Square ksq) {
   if (pawns)
       while (!(DistanceRingsBB[ksq][minKPdistance[Us]++] & pawns)) {}
 
-  if (relative_rank(Us, ksq) > RANK_4)
+  if (relative_rank(Us, ksq) > RANK_2)
       return kingSafety[Us] = make_score(0, -16 * minKPdistance[Us]);
 
   Value bonus = shelter_storm<Us>(pos, ksq);
