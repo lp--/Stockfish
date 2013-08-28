@@ -395,7 +395,7 @@ Value do_evaluate(const Position& pos, Value& margin) {
       else
           // Endgame with opposite-colored bishops, but also other pieces. Still
           // a bit drawish, but not as drawish as with only the two bishops.
-	sf = ScaleFactor( std::min( 48, 40 +  popcount<Max15>(pos.pieces() ^ pos.pieces(PAWN)) )  );
+	sf = ScaleFactor( std::max( 50, 40 +  popcount<Max15>(pos.pieces() ^ pos.pieces(PAWN)) )  );
   }
 
   margin = margins[pos.side_to_move()];
