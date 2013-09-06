@@ -71,7 +71,7 @@ namespace {
   // [no friendly pawn | pawn unblocked | pawn blocked][rank of enemy pawn]
   const Value StormDanger[3][RANK_NB] = {
   { V( 0),  V(64), V(128), V(51), V(26) },
-  { V(26),  V(32), V( 96), V(38), V(20) },
+  { V(26),  V(32), V( 86), V(38), V(20) },
   { V( 0),  V( 0), V( 64), V(25), V(13) }};
 
   // Max bonus for king safety. Corresponds to start position with all the pawns
