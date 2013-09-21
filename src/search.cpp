@@ -950,7 +950,7 @@ moves_loop: // When in check and at SpNode search starts from here
               ss->reduction += ONE_PLY;
 
           if (move == countermoves[0] || move == countermoves[1])
-              ss->reduction = std::max(DEPTH_ZERO, ss->reduction-ONE_PLY);
+              ss->reduction = std::max(DEPTH_ZERO, ss->reduction-ONE_PLY*3);
 
           Depth d = std::max(newDepth - ss->reduction, ONE_PLY);
           if (SpNode)
