@@ -133,8 +133,8 @@ void Search::init() {
   // Init reductions array
   for (hd = 1; hd < 64; hd++) for (mc = 1; mc < 64; mc++)
   {
-      double    pvRed = log(double(hd)) * log(double(mc)) / 3.0;
-      double nonPVRed = 0.33 + log(double(hd)) * log(double(mc)) / 2.25;
+      double    pvRed = log(double(hd)) * log(double(mc)) / 3.25;
+      double nonPVRed = 0.33 + log(double(hd)) * log(double(mc)) / 2.5;
       Reductions[1][1][hd][mc] = (int8_t) (   pvRed >= 1.0 ? floor(   pvRed * int(ONE_PLY)) : 0);
       Reductions[0][1][hd][mc] = (int8_t) (nonPVRed >= 1.0 ? floor(nonPVRed * int(ONE_PLY)) : 0);
 
@@ -830,12 +830,9 @@ moves_loop: // When in check and at SpNode search starts from here
                  || pos.is_passed_pawn_push(move)
                  || type_of(move) == CASTLE;
 
-      // Step 12. Extend checks and, in PV nodes, also dangerous moves
-      if (PvNode && dangerous)
+      // Step 12. Extend checks
+      if (givesCheck && pos.see_sign(move) >= 0)
           ext = ONE_PLY;
-
-      else if (givesCheck && pos.see_sign(move) >= 0)
-          ext = inCheck || ss->staticEval <= alpha ? ONE_PLY : ONE_PLY / 2;
 
       // Singular extension search. If all moves but one fail low on a search of
       // (alpha-s, beta-s), and just one fails high on (alpha, beta), then that move
@@ -950,10 +947,10 @@ moves_loop: // When in check and at SpNode search starts from here
               ss->reduction += ONE_PLY;
 
           else if (History[pos.piece_on(to_sq(move))][to_sq(move)] < 0)
-              ss->reduction += ONE_PLY / 2;
+              ss->reduction += ONE_PLY;
 
           if (move == countermoves[0] || move == countermoves[1])
-              ss->reduction = std::max(DEPTH_ZERO, ss->reduction - ONE_PLY);
+              ss->reduction = std::max(DEPTH_ZERO, ss->reduction - ONE_PLY*5/2);
 
           Depth d = std::max(newDepth - ss->reduction, ONE_PLY);
           if (SpNode)
