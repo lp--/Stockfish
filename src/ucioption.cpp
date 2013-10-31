@@ -79,11 +79,11 @@ void init(OptionsMap& o) {
   o["OwnBook"]                     = Option(false);
   o["MultiPV"]                     = Option(1, 1, 500);
   o["Skill Level"]                 = Option(20, 0, 20);
-  o["Emergency Move Horizon"]      = Option(40, 0, 50);
+  o["Emergency Move Horizon"]      = Option(28, 0, 50);
   o["Emergency Base Time"]         = Option(60, 0, 30000);
   o["Emergency Move Time"]         = Option(30, 0, 5000);
   o["Minimum Thinking Time"]       = Option(20, 0, 5000);
-  o["Slow Mover"]                  = Option(70, 10, 1000);
+  o["Slow Mover"]                  = Option(50, 10, 1000);
   o["UCI_Chess960"]                = Option(false);
   o["UCI_AnalyseMode"]             = Option(false, on_eval);
 }
