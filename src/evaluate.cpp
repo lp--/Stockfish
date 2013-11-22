@@ -543,8 +543,8 @@ Value do_evaluate(const Position& pos) {
                 score += MinorBehindPawn;
 	    
 	    // Bishop or knight ahead of a pawn
-	    if (  relative_rank(Us, s) < RANK_5 
-		&& ((pos.pieces(Us, PAWN) + pawn_push(Us))  & s ) )
+	    if (  relative_rank(Us, s) > RANK_2
+		  && (pos.pieces(Us, PAWN) & (s - pawn_push(Us))))
 	        score -= MinorAheadPawn;
 
         }
