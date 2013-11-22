@@ -176,7 +176,7 @@ namespace {
   const Score BishopPawns      = make_score( 8, 12);
   const Score KnightPawns      = make_score( 8,  4);
   const Score MinorBehindPawn  = make_score(16,  0);
-  const Score MinorAheadPawn  = make_score( 8,  0);
+  const Score MinorAheadPawn   = make_score(16,  0);
   const Score UndefendedMinor  = make_score(25, 10);
   const Score TrappedRook      = make_score(90,  0);
   const Score Unstoppable      = make_score( 0, 20);
@@ -545,8 +545,6 @@ Value do_evaluate(const Position& pos) {
 	    // Bishop or knight ahead of a pawn
 	    if (  (pos.pieces(Us, PAWN) + pawn_push(Us))  & s  )
                 score -= MinorAheadPawn;
-
-
 
         }
 
