@@ -176,7 +176,7 @@ namespace {
   const Score BishopPawns      = make_score( 8, 12);
   const Score KnightPawns      = make_score( 8,  4);
   const Score MinorBehindPawn  = make_score(16,  0);
-  const Score MinorAheadPawn   = make_score( 8,  0);
+  const Score BishopAheadPawn   = make_score(16,  0);
   const Score UndefendedMinor  = make_score(25, 10);
   const Score TrappedRook      = make_score(90,  0);
   const Score Unstoppable      = make_score( 0, 20);
@@ -523,9 +523,16 @@ Value do_evaluate(const Position& pos) {
                  && !more_than_one(BetweenBB[s][pos.king_square(Them)] & pos.pieces()))
                  score += BishopPin;
 
-        // Penalty for bishop with same coloured pawns
-        if (Piece == BISHOP)
-            score -= BishopPawns * ei.pi->pawns_on_same_color_squares(Us, s);
+        
+        if (Piece == BISHOP){
+            // Penalty for bishop with same coloured pawns
+	    score -= BishopPawns * ei.pi->pawns_on_same_color_squares(Us, s);
+
+	    // Bishop ahead of a pawn
+	    if (  relative_rank(Us, s) ==  RANK_3 
+	        && (pos.pieces(Us, PAWN) & (s - pawn_push(Us))))
+	        score -= BishopAheadPawn;
+	}
 
         // Penalty for knight when there are few enemy pawns
         if (Piece == KNIGHT)
@@ -541,12 +548,6 @@ Value do_evaluate(const Position& pos) {
             if (    relative_rank(Us, s) < RANK_5
                 && (pos.pieces(PAWN) & (s + pawn_push(Us))))
                 score += MinorBehindPawn;
-	    
-	    // Bishop or knight ahead of a pawn
-	    if (  relative_rank(Us, s) > RANK_2
-		  && (pos.pieces(Us, PAWN) & (s - pawn_push(Us))))
-	        score -= MinorAheadPawn;
-
         }
 
         if (  (Piece == ROOK || Piece == QUEEN)
