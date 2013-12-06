@@ -291,14 +291,14 @@ namespace {
 
     Stack stack[MAX_PLY_PLUS_6], *ss = stack+2; // To allow referencing (ss-2)
     int depth;
-    Value bestValue, alpha, beta, delta;
+    Value bestValue, alpha, beta, deltaA, deltaB;
 
     std::memset(ss-2, 0, 5 * sizeof(Stack));
     (ss-1)->currentMove = MOVE_NULL; // Hack to skip update gains
 
     depth = 0;
     BestMoveChanges = 0;
-    bestValue = delta = alpha = -VALUE_INFINITE;
+    bestValue = deltaA = deltaB = alpha = -VALUE_INFINITE;
     beta = VALUE_INFINITE;
 
     TT.new_search();
@@ -333,9 +333,10 @@ namespace {
             // Reset aspiration window starting size
             if (depth >= 5)
             {
-                delta = Value(16);
-                alpha = std::max(RootMoves[PVIdx].prevScore - delta,-VALUE_INFINITE);
-                beta  = std::min(RootMoves[PVIdx].prevScore + delta, VALUE_INFINITE);
+                deltaB = Value(16);
+                deltaA = Value(5 + depth/2);
+                alpha = std::max(RootMoves[PVIdx].prevScore - deltaA,-VALUE_INFINITE);
+                beta  = std::min(RootMoves[PVIdx].prevScore + deltaB, VALUE_INFINITE);
             }
 
             // Start with a small aspiration window and, in the case of a fail
@@ -374,18 +375,18 @@ namespace {
                 // re-search, otherwise exit the loop.
                 if (bestValue <= alpha)
                 {
-                    alpha = std::max(bestValue - delta, -VALUE_INFINITE);
+                    alpha = std::max(bestValue - deltaA, -VALUE_INFINITE);
 
                     Signals.failedLowAtRoot = true;
                     Signals.stopOnPonderhit = false;
                 }
                 else if (bestValue >= beta)
-                    beta = std::min(bestValue + delta, VALUE_INFINITE);
+                    beta = std::min(bestValue + deltaB, VALUE_INFINITE);
 
                 else
                     break;
 
-                delta += delta / 2;
+                deltaA += deltaA / 2; deltaB += deltaB / 2;
 
                 assert(alpha >= -VALUE_INFINITE && beta <= VALUE_INFINITE);
             }
