@@ -155,8 +155,8 @@ void Search::init() {
   //Init Delta
   for (d = 0; d < 64; ++d)
   {
-    Delta[0][d] = Value( -1  + 3 * pow(d , 1/1.8 )); 
-    Delta[1][d] = Value( 16 );
+    Delta[1][d] =  Value( 5 + d/2 ); 
+    Delta[0][d] =  Value( d < 16 ? 32 : 16) ;
   }
 }
 
@@ -385,19 +385,17 @@ namespace {
                 if (bestValue <= alpha)
                 {
                     alpha = std::max(bestValue - deltaA, -VALUE_INFINITE);
-
+		    deltaA *= 2;
                     Signals.failedLowAtRoot = true;
                     Signals.stopOnPonderhit = false;
 		   
                 }
                 else if (bestValue >= beta){
                     beta = std::min(bestValue + deltaB, VALUE_INFINITE);
-
+		    deltaB *= 2;
 		}
                 else
                     break;
-
-		deltaA += deltaA/2; deltaB += deltaB/2;
 
                 assert(alpha >= -VALUE_INFINITE && beta <= VALUE_INFINITE);
             }
