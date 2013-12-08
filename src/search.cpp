@@ -69,6 +69,8 @@ namespace {
     return Value(100 * int(d));
   }
 
+  Value Delta[2][64]; // [alpha/beta][depth]
+
   // Reduction lookup tables (initialized at startup) and their access function
   int8_t Reductions[2][2][64][64]; // [pv][improving][depth][moveNumber]
 
@@ -148,6 +150,13 @@ void Search::init() {
   {
       FutilityMoveCounts[0][d] = int(2.4 + 0.222 * pow(d +  0.0, 1.8));
       FutilityMoveCounts[1][d] = int(3.0 +   0.3 * pow(d + 0.98, 1.8));
+  }
+
+  //Init Delta
+  for (d = 0; d < 64; ++d)
+  {
+    Delta[0][d] = Value( -1  + 3 * pow(d , 1/1.8 )); 
+    Delta[1][d] = Value( 16 );
   }
 }
 
@@ -333,8 +342,8 @@ namespace {
             // Reset aspiration window starting size
             if (depth >= 5)
             {
-	        deltaA = Value(std::max( 24 - depth/2, 12));
-                deltaB = Value(16);
+	        deltaA = Delta[0][depth];
+                deltaB = Delta[1][depth];
                 alpha = std::max(RootMoves[PVIdx].prevScore - deltaA,-VALUE_INFINITE);
                 beta  = std::min(RootMoves[PVIdx].prevScore + deltaB, VALUE_INFINITE);
             }
@@ -379,14 +388,16 @@ namespace {
 
                     Signals.failedLowAtRoot = true;
                     Signals.stopOnPonderhit = false;
+		   
                 }
-                else if (bestValue >= beta)
+                else if (bestValue >= beta){
                     beta = std::min(bestValue + deltaB, VALUE_INFINITE);
 
+		}
                 else
                     break;
 
-                deltaA += deltaA / 2; deltaB += deltaB / 2;
+		deltaA += deltaA/2; deltaB += deltaB/2;
 
                 assert(alpha >= -VALUE_INFINITE && beta <= VALUE_INFINITE);
             }
