@@ -774,7 +774,7 @@ Value do_evaluate(const Position& pos) {
         int rr = r * (r - 1);
 
         // Base bonus based on rank
-        Value mbonus = Value(17 * rr);
+        Value mbonus = Value(21 * rr);
         Value ebonus = Value(7 * (rr + r + 1));
 
         if (rr)
