@@ -207,6 +207,9 @@ namespace {
   // scores, indexed by color and by a calculated integer number.
   Score KingDanger[COLOR_NB][128];
 
+  Value PassedPawnBaseBonus[6][2] ; // [ rank - 2 ][ mg/eg ]
+  int PassedPawnKpBonus[6][2] ; // [ rank - 2 ][ them/us ]
+
   // Function prototypes
   template<bool Trace>
   Value do_evaluate(const Position& pos);
@@ -279,6 +282,24 @@ namespace Eval {
 
         KingDanger[1][i] = apply_weight(make_score(t, 0), Weights[KingDangerUs]);
         KingDanger[0][i] = apply_weight(make_score(t, 0), Weights[KingDangerThem]);
+    }
+
+    for (int r = 0; r < 6; ++r)
+    {
+      // PassedPawnBaseBonus[r][0] = Value( ( r*(r*( r* 99 + 17437 ) - 17634 ) +  214) / 1024 );    
+      // PassedPawnBaseBonus[r][1] = Value( ( r*(r*( r*603 +  7157 )  -   36 ) + 6702) / 1024 );      
+      // PassedPawnKpBonus[r][0] = std::max( 0, r*(r*( r*  1 + 5536 )  -  5215 ) -  202 );  
+      // PassedPawnKpBonus[r][1] = std::max( 0, r*(r*( r*246 + 1453 )  -  2400 ) +  121 ); 
+
+      PassedPawnBaseBonus[r][0] = Value(  17 * r*( r - 1) );    
+      PassedPawnBaseBonus[r][1] = Value(  ( r*(r*( r*620 +  7157 )  -   36 ) + 7168) / 1024 );      
+      PassedPawnKpBonus[r][0] =  std::max( 0, r*(r*( r*  1 + 5480 )  -  5215 ) -  202 );
+      PassedPawnKpBonus[r][1] = std::max( 0,  r*(r*( r*246 + 1453 )  -  2400 ) +  121  ); 
+
+
+
+      //printf("%d\t%d\t%d\t%d\n" , PassedPawnBaseBonus[r][0] , PassedPawnBaseBonus[r][1] , 
+      //	     PassedPawnKpBonus[r][0]/1024 , PassedPawnKpBonus[r][1]/1024 );
     }
   }
 
@@ -774,16 +795,16 @@ Value do_evaluate(const Position& pos) {
         int rr = r * (r - 1);
 
         // Base bonus based on rank
-        Value mbonus = Value(17 * rr);
-        Value ebonus = Value(7 * (rr + r + 1));
+        Value mbonus = PassedPawnBaseBonus[r][0];
+        Value ebonus = PassedPawnBaseBonus[r][1];
 
         if (rr)
         {
             Square blockSq = s + pawn_push(Us);
 
             // Adjust bonus based on the king's proximity
-            ebonus +=  Value(square_distance(pos.king_square(Them), blockSq) * 5 * rr)
-                     - Value(square_distance(pos.king_square(Us  ), blockSq) * 2 * rr);
+            ebonus +=  Value(square_distance(pos.king_square(Them), blockSq) * PassedPawnKpBonus[r][0] / 1024) 
+	            -  Value(square_distance(pos.king_square(Us  ), blockSq) * PassedPawnKpBonus[r][1] / 1024);
 
             // If blockSq is not the queening square then consider also a second push
             if (relative_rank(Us, blockSq) != RANK_8)
