@@ -34,6 +34,7 @@ private:
   int optimumSearchTime;
   int maximumSearchTime;
   int unstablePVExtraTime;
+  double timeTrouble;
 };
 
 #endif // #ifndef TIMEMAN_H_INCLUDED

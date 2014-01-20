@@ -29,7 +29,6 @@ namespace {
 
   /// Constants
 
-  const int MoveHorizon   = 50;   // Plan time management at most this many moves ahead
   const double MaxRatio   = 7.0;  // When in trouble, we can step over reserved time with this ratio
   const double StealRatio = 0.33; // However we must not steal time from remaining moves over this ratio
 
@@ -60,7 +59,7 @@ namespace {
 
 void TimeManager::pv_instability(double bestMoveChanges) {
 
-  unstablePVExtraTime = int(bestMoveChanges * optimumSearchTime / 1.4);
+  unstablePVExtraTime = int(bestMoveChanges * optimumSearchTime * timeTrouble);
 }
 
 
@@ -83,16 +82,22 @@ void TimeManager::init(const Search::LimitsType& limits, int currentPly, Color u
 
   int hypMTG, hypMyTime, t1, t2;
 
+  // Plan for severe time trouble in games with 0 or very small increment
+
+  timeTrouble = // decrease time planning  by this amount when time trouble is anticipated
+    ( 1 +  0.401 * tanh( limits.inc[us]/10. + limits.time[us]/15000.))/1.4 ; 
+  int MoveHorizon = int( 50 *  timeTrouble);  // Plan time management at most this many moves ahead
+
   // Read uci parameters
-  int emergencyMoveHorizon = Options["Emergency Move Horizon"];
+  int emergencyMoveHorizon = int( Options["Emergency Move Horizon"] * timeTrouble );
   int emergencyBaseTime    = Options["Emergency Base Time"];
   int emergencyMoveTime    = Options["Emergency Move Time"];
   int minThinkingTime      = Options["Minimum Thinking Time"];
-  int slowMover            = Options["Slow Mover"];
+  int slowMover            = int ( Options["Slow Mover"] * timeTrouble );
 
   // Initialize all to maximum values but unstablePVExtraTime that is reset
   unstablePVExtraTime = 0;
-  optimumSearchTime = maximumSearchTime = std::max(limits.time[us], minThinkingTime);
+  optimumSearchTime = maximumSearchTime = limits.time[us];
 
   // We calculate optimum time usage for different hypothetical "moves to go"-values and choose the
   // minimum of calculated search time values. Usually the greatest hypMTG gives the minimum values.
