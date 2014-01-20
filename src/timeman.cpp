@@ -59,7 +59,7 @@ namespace {
 
 void TimeManager::pv_instability(double bestMoveChanges) {
 
-  unstablePVExtraTime = int(bestMoveChanges * optimumSearchTime * timeTrouble / 1.4);
+  unstablePVExtraTime = int(bestMoveChanges * optimumSearchTime  / (1.4 * timeTrouble ) );
 }
 
 
@@ -85,7 +85,7 @@ void TimeManager::init(const Search::LimitsType& limits, int currentPly, Color u
   // Plan for severe time trouble in games with 0 or very small increment
 
   timeTrouble = // decrease time planning  by this amount when time trouble is anticipated
-    ( 1 +  0.401 * tanh( limits.inc[us]/10. + limits.time[us]/15000.))/1.4 ; 
+    ( 1.001 +  0.4 * tanh( limits.inc[us]/10. + limits.time[us]/15000.))/1.4 ; 
   int MoveHorizon = int( 50 *  timeTrouble);  // Plan time management at most this many moves ahead
 
   // Read uci parameters
