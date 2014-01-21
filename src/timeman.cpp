@@ -84,8 +84,9 @@ void TimeManager::init(const Search::LimitsType& limits, int currentPly, Color u
 
   // Plan for severe time trouble in games with 0 or very small increment
 
+  bool playingOnIncrement = limits.time[us] < 3 * limits.inc[us];
   timeTrouble = // decrease time planning  by this amount when time trouble is anticipated
-    ( 1.001 +  0.4 * tanh( limits.inc[us]/10. + limits.time[us]/5000.))/1.4 ; 
+    playingOnIncrement? 1 : ( 1.001 +  0.4 * tanh( (limits.inc[us]*50 + limits.time[us])/5000. )  )/1.4 ; 
   int MoveHorizon = int( 50 *  timeTrouble);  // Plan time management at most this many moves ahead
 
   // Read uci parameters
@@ -93,7 +94,7 @@ void TimeManager::init(const Search::LimitsType& limits, int currentPly, Color u
   int emergencyBaseTime    = Options["Emergency Base Time"];
   int emergencyMoveTime    = Options["Emergency Move Time"];
   int minThinkingTime      = Options["Minimum Thinking Time"];
-  int slowMover            = int ( Options["Slow Mover"] * timeTrouble );
+  int slowMover            = int ( Options["Slow Mover"] * ( playingOnIncrement? 5.001/7 : timeTrouble ) );
 
   // Initialize all to maximum values but unstablePVExtraTime that is reset
   unstablePVExtraTime = 0;
