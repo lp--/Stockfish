@@ -82,19 +82,20 @@ void TimeManager::init(const Search::LimitsType& limits, int currentPly, Color u
 
   int hypMTG, hypMyTime, t1, t2;
 
-  // Plan for severe time trouble in games with 0 or very small increment
+  // Plan for  time trouble in  case of no increment game or when game arrived at playing on increment only
 
   bool playingOnIncrement = limits.time[us] < 3 * limits.inc[us];
-  timeTrouble = // decrease time planning  by this amount when time trouble is anticipated
-    playingOnIncrement? 1 : ( 1.001 +  0.4 * tanh( (limits.inc[us]*50 + limits.time[us])/5000. )  )/1.4 ; 
+  bool noIncrementGame =  ( limits.inc[us] == 0  && limits.movestogo == 0 ); 
+  timeTrouble =          // decrease  scheduled time by this amount in no increment game
+    ( noIncrementGame ?  (1.001 +  0.4 * tanh(  limits.time[us]/5000. )  )/1.4 : 1.001 ); 
   int MoveHorizon = int( 50 *  timeTrouble);  // Plan time management at most this many moves ahead
 
   // Read uci parameters
-  int emergencyMoveHorizon = int( Options["Emergency Move Horizon"] * timeTrouble );
+  int emergencyMoveHorizon = int(Options["Emergency Move Horizon"] * timeTrouble);
   int emergencyBaseTime    = Options["Emergency Base Time"];
   int emergencyMoveTime    = Options["Emergency Move Time"];
   int minThinkingTime      = Options["Minimum Thinking Time"];
-  int slowMover            = int ( Options["Slow Mover"] * ( playingOnIncrement? 5.001/7 : timeTrouble ) );
+  int slowMover            = int(Options["Slow Mover"] * (playingOnIncrement ? 5.001/7 : timeTrouble));
 
   // Initialize all to maximum values but unstablePVExtraTime that is reset
   unstablePVExtraTime = 0;
