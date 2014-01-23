@@ -59,7 +59,7 @@ namespace {
 
 void TimeManager::pv_instability(double bestMoveChanges) {
 
-  unstablePVExtraTime = int(bestMoveChanges * optimumSearchTime  / noIncrementFactor  );
+  unstablePVExtraTime = int(bestMoveChanges * optimumSearchTime  / incrementFactor  );
 }
 
 
@@ -86,15 +86,15 @@ void TimeManager::init(const Search::LimitsType& limits, int currentPly, Color u
 
   bool playingOnIncrement = limits.time[us] < 3 * limits.inc[us];
   bool noIncrementGame =  ( limits.inc[us] == 0  && limits.movestogo == 0 ); 
-  noIncrementFactor =  ( noIncrementGame ?  1.001 : 1.401 );  // decrease time by this amount in no increment game
-  int MoveHorizon = int( 50 *  noIncrementFactor );  // Plan time management at most this many moves ahead
+  incrementFactor =  ( noIncrementGame ?  1.001 : 1.401 );  
+  int MoveHorizon = int( 50 *  incrementFactor / 1.4 );  // Plan time management at most this many moves ahead
 
   // Read uci parameters
-  int emergencyMoveHorizon = int(Options["Emergency Move Horizon"] * noIncrementFactor/1.4);
+  int emergencyMoveHorizon = int(Options["Emergency Move Horizon"] * incrementFactor/1.4);
   int emergencyBaseTime    = Options["Emergency Base Time"];
   int emergencyMoveTime    = Options["Emergency Move Time"];
   int minThinkingTime      = Options["Minimum Thinking Time"];
-  int slowMover            = int(Options["Slow Mover"] * (playingOnIncrement ? 1.001 : noIncrementFactor ) / 1.4 );
+  int slowMover            = int(Options["Slow Mover"] * (playingOnIncrement ? 1.001 : incrementFactor ) / 1.4 );
 
   // Initialize all to maximum values but unstablePVExtraTime that is reset
   unstablePVExtraTime = 0;
