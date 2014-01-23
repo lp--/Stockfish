@@ -86,8 +86,7 @@ void TimeManager::init(const Search::LimitsType& limits, int currentPly, Color u
 
   bool playingOnIncrement = limits.time[us] < 3 * limits.inc[us];
   bool noIncrementGame =  ( limits.inc[us] == 0  && limits.movestogo == 0 ); 
-  timeTrouble =          // decrease  scheduled time by this amount in no increment game
-    ( noIncrementGame ?  1.001 +  0.4 * tanh(  limits.time[us]/5000. )  : 1.401 );  // 1.401 in no trouble
+  timeTrouble =  ( noIncrementGame ?  1.001 : 1.401 );  // decrease time by this amount in no increment game
   int MoveHorizon = int( 50 *  timeTrouble);  // Plan time management at most this many moves ahead
 
   // Read uci parameters
