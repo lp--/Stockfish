@@ -30,8 +30,7 @@ namespace {
   /// Constants
 
   const int MoveHorizon   = 50;   // Plan time management at most this many moves ahead
-  const double MaxRatio   = 7.0;  // When in trouble, we can step over reserved time with this ratio
-  const double StealRatio = 0.33; // However we must not steal time from remaining moves over this ratio
+  const double MaxRatio   = 7.0;  // To finish iteration we can step over reserved time with this ratio
 
   const double xscale     = 9.3;
   const double xshift     = 59.8;
@@ -127,7 +126,6 @@ namespace {
   int remaining(int myTime, int movesToGo, int currentPly, int slowMover)
   {
     const double TMaxRatio   = (T == OptimumTime ? 1 : MaxRatio);
-    const double TStealRatio = (T == OptimumTime ? 0 : StealRatio);
 
     double thisMoveImportance = (move_importance(currentPly) * slowMover) / 100;
     double otherMovesImportance = 0;
@@ -135,9 +133,8 @@ namespace {
     for (int i = 1; i < movesToGo; ++i)
         otherMovesImportance += move_importance(currentPly + 2 * i);
 
-    double ratio1 = (TMaxRatio * thisMoveImportance) / (TMaxRatio * thisMoveImportance + otherMovesImportance);
-    double ratio2 = (thisMoveImportance + TStealRatio * otherMovesImportance) / (thisMoveImportance + otherMovesImportance);
+    double ratio = TMaxRatio * thisMoveImportance / (thisMoveImportance + otherMovesImportance);
 
-    return int(floor(myTime * std::min(ratio1, ratio2)));
+    return int(myTime * ratio);
   }
 }
