@@ -183,7 +183,7 @@ void Search::think() {
   static PolyglotBook book; // Defined static to initialize the PRNG only once
 
   RootColor = RootPos.side_to_move();
-  TimeMgr.init(Limits, RootPos.game_ply(), RootColor);
+  TimeMgr.init(Limits, RootColor);
 
   if (RootMoves.empty())
   {
@@ -1627,7 +1627,7 @@ void check_time() {
   Time::point elapsed = Time::now() - SearchTime;
   bool stillAtFirstMove =    Signals.firstRootMove
                          && !Signals.failedLowAtRoot
-                         &&  elapsed > TimeMgr.available_time() * 75 / 100;
+                         &&  elapsed > TimeMgr.available_time() * 3/4;
 
   bool noMoreTime =   elapsed > TimeMgr.maximum_time() - 2 * TimerThread::Resolution
                    || stillAtFirstMove;
