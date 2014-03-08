@@ -419,10 +419,16 @@ namespace {
             if (depth > 4 && depth < 50 &&  MultiPV == 1)
                 TimeMgr.pv_instability(BestMoveChanges);
 
+	    Time::point IterationTime = Time::now() - SearchTime;
+
             // Stop the search if only one legal move is available or all
-            // of the available time has been used.
+            // of the available time has been used or hard stop due to unchaging 
+            // root move is expected to happen.
             if (   RootMoves.size() == 1
-                || Time::now() - SearchTime > TimeMgr.available_time())
+                || IterationTime > TimeMgr.available_time()
+                || ( !Signals.failedLowAtRoot
+                &&    BestMoveChanges < 1.0e-4  
+                &&    IterationTime * 3  > TimeMgr.available_time()) )	   
             {
                 // If we are allowed to ponder do not stop the search now but
                 // keep pondering until the GUI sends "ponderhit" or "stop".
@@ -1614,7 +1620,7 @@ void check_time() {
   Time::point elapsed = Time::now() - SearchTime;
   bool stillAtFirstMove =    Signals.firstRootMove
                          && !Signals.failedLowAtRoot
-                         &&  elapsed > TimeMgr.available_time() * 75 / 100;
+                         &&  elapsed > TimeMgr.available_time() * 3/4;
 
   bool noMoreTime =   elapsed > TimeMgr.maximum_time() - 2 * TimerThread::Resolution
                    || stillAtFirstMove;
