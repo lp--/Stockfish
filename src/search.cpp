@@ -45,6 +45,7 @@ namespace Search {
   Color RootColor;
   Time::point SearchTime;
   StateStackPtr SetupStates;
+  Value Contempt[2]; // [bestValue > VALUE_DRAW]
 }
 
 using std::string;
@@ -207,15 +208,9 @@ void Search::think() {
       }
   }
 
-  if (Options["Contempt Factor"] && !Options["UCI_AnalyseMode"])
-  {
-      int cf = Options["Contempt Factor"] * PawnValueMg / 100; // From centipawns
-      cf = cf * Material::game_phase(RootPos) / PHASE_MIDGAME; // Scale down with phase
-      DrawValue[ RootColor] = VALUE_DRAW - Value(cf);
-      DrawValue[~RootColor] = VALUE_DRAW + Value(cf);
-  }
-  else
-      DrawValue[WHITE] = DrawValue[BLACK] = VALUE_DRAW;
+  DrawValue[0] = DrawValue[1] = VALUE_DRAW;
+  Contempt[0] =  Options["Contempt Factor"] * PawnValueEg / 100; // From centipawns
+  Contempt[1] = (Options["Contempt Factor"] + 12) * PawnValueEg / 100;
 
   if (Options["Write Search Log"])
   {
@@ -343,6 +338,9 @@ namespace {
             while (true)
             {
                 bestValue = search<Root>(pos, ss, alpha, beta, depth * ONE_PLY, false);
+
+                DrawValue[ RootColor] = VALUE_DRAW - Contempt[bestValue > VALUE_DRAW];
+                DrawValue[~RootColor] = VALUE_DRAW + Contempt[bestValue > VALUE_DRAW];
 
                 // Bring to front the best move. It is critical that sorting is
                 // done with a stable algorithm because all the values but the first
