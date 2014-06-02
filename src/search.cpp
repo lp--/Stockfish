@@ -404,19 +404,45 @@ namespace {
             if (depth > 4 && depth < 50 &&  MultiPV == 1)
                 TimeMgr.pv_instability(BestMoveChanges);
 
+            bool stop = false;
+            Time::point IterationTime = Time::now() - SearchTime;
+
             // Stop the search if only one legal move is available or all
             // of the available time has been used.
             if (   RootMoves.size() == 1
-                || Time::now() - SearchTime > TimeMgr.available_time())
-            {
-                // If we are allowed to ponder do not stop the search now but
+                || IterationTime > TimeMgr.available_time())
+	        stop = true;
+                
+
+	    
+           // Stop the search early if one move seems to be much better than others
+             if (    depth >= 10
+                 && !stop
+                 &&  MultiPV == 1
+                 &&  bestValue > VALUE_MATED_IN_MAX_PLY
+		 &&  IterationTime >  TimeMgr.available_time() / 100 )
+             {
+                 Value rBeta = bestValue + int(  2.6 * log( double(IterationTime)/ 
+			  double(TimeMgr.available_time()) ) * int( PawnValueEg ));
+                 ss->excludedMove = RootMoves[0].pv[0];
+                 ss->skipNullMove = true;
+                 Value v = search<NonPV, false>(pos, ss, rBeta - 1, rBeta, (depth - 3) * ONE_PLY, true);
+                 ss->skipNullMove = false;
+                 ss->excludedMove = MOVE_NONE;
+ 
+                 if (v < rBeta)
+                     stop = true;
+             }
+
+	     if(stop){		     
+	     // If we are allowed to ponder do not stop the search now but
                 // keep pondering until the GUI sends "ponderhit" or "stop".
                 if (Limits.ponder)
                     Signals.stopOnPonderhit = true;
                 else
                     Signals.stop = true;
-            }
-        }
+	     }
+	}
     }
   }
 
@@ -1642,7 +1668,7 @@ void check_time() {
   Time::point elapsed = Time::now() - SearchTime;
   bool stillAtFirstMove =    Signals.firstRootMove
                          && !Signals.failedLowAtRoot
-                         &&  elapsed > TimeMgr.available_time() * 75 / 100;
+                         &&  elapsed > TimeMgr.available_time() * 3 / 4;
 
   bool noMoreTime =   elapsed > TimeMgr.maximum_time() - 2 * TimerThread::Resolution
                    || stillAtFirstMove;
