@@ -422,8 +422,8 @@ namespace {
                  &&  bestValue > VALUE_MATED_IN_MAX_PLY
 		 &&  IterationTime >  TimeMgr.available_time() / 100 )
              {
-                 Value rBeta = bestValue + int(  2.6 * log( double(IterationTime)/ 
-			  double(TimeMgr.available_time()) ) * int( PawnValueEg ));
+                 double tRatio = double(IterationTime)/ double(TimeMgr.available_time());
+	         Value rBeta = bestValue + int((tRatio > 0.68 ? -1:  2.6 * log(tRatio)) * int(PawnValueEg));
                  ss->excludedMove = RootMoves[0].pv[0];
                  ss->skipNullMove = true;
                  Value v = search<NonPV, false>(pos, ss, rBeta - 1, rBeta, (depth - 3) * ONE_PLY, true);
