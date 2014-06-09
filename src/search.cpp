@@ -145,7 +145,7 @@ void Search::init() {
   for (d = 0; d < 32; ++d)
   {
       FutilityMoveCounts[0][d] = int(2.4 + 0.222 * pow(d + 0.00, 1.8));
-      FutilityMoveCounts[1][d] = int(3.0 + 0.300 * pow(d + 0.6, 1.8));
+      FutilityMoveCounts[1][d] = int(3.0 + 0.300 * pow(d + 1.25, 1.8));
       //printf("%d\t%d\t%d\n", d, FutilityMoveCounts[0][d], FutilityMoveCounts[1][d] );
 
 
