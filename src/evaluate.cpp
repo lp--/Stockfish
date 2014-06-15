@@ -717,7 +717,7 @@ namespace {
             - evaluate_passed_pawns<BLACK, Trace>(pos, ei);
 
     // If one side has only a king, score for potential unstoppable pawns
-    if (!pos.non_pawn_material(WHITE) || !pos.non_pawn_material(BLACK))
+    if (!(pos.non_pawn_material(WHITE) || pos.non_pawn_material(BLACK)))
         score +=  evaluate_unstoppable_pawns(pos, WHITE, ei)
                 - evaluate_unstoppable_pawns(pos, BLACK, ei);
 
