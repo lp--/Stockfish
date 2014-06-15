@@ -161,7 +161,7 @@ namespace {
   const Score BishopPawns      = make_score( 8, 12);
   const Score MinorBehindPawn  = make_score(16,  0);
   const Score TrappedRook      = make_score(90,  0);
-  const Score Unstoppable      = make_score( 0, 16);
+  const Score Unstoppable      = make_score( 0, 20);
 
   // Penalty for a bishop on a1/h1 (a8/h8 for black) which is trapped by
   // a friendly pawn on b2/g2 (b7/g7 for black). This can obviously only
@@ -616,14 +616,11 @@ namespace {
   // candidate pawns. In case opponent has no pieces but pawns, this is somewhat
   // related to the possibility that pawns are unstoppable.
 
-  Score evaluate_unstoppable_pawns(const Position& pos, Color us, const EvalInfo& ei) {
+  Score evaluate_unstoppable_pawns(Color us, const EvalInfo& ei) {
 
     Bitboard b = ei.pi->passed_pawns(us) | ei.pi->candidate_pawns(us);
 
-    if (!b || pos.non_pawn_material(~us))
-        return SCORE_ZERO;
-
-    return Unstoppable * int(relative_rank(us, frontmost_sq(us, b)));
+    return !b ? SCORE_ZERO : Unstoppable * int(relative_rank(us, frontmost_sq(us, b)));
   }
 
 
@@ -718,8 +715,7 @@ namespace {
 
     // If one side has only a king, score for potential unstoppable pawns
     if (!pos.non_pawn_material(WHITE) && !pos.non_pawn_material(BLACK))
-        score +=  evaluate_unstoppable_pawns(pos, WHITE, ei)
-                - evaluate_unstoppable_pawns(pos, BLACK, ei);
+        score += evaluate_unstoppable_pawns(WHITE, ei) - evaluate_unstoppable_pawns(BLACK, ei);
 
     // Evaluate space for both sides, only in middlegame
     if (ei.mi->space_weight())
