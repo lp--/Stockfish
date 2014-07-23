@@ -181,7 +181,7 @@ void Search::think() {
 
   TimeMgr.init(Limits, RootPos.game_ply(), RootPos.side_to_move());
 
-  int cf = Options["Contempt Factor"] * PawnValueEg / 100; // From centipawns
+  int cf = (Options["Contempt Factor"] + TimeMgr.time_contempt()) * PawnValueEg / 100; // From centipawns
   DrawValue[ RootPos.side_to_move()] = VALUE_DRAW - Value(cf);
   DrawValue[~RootPos.side_to_move()] = VALUE_DRAW + Value(cf);
 

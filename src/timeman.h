@@ -29,11 +29,13 @@ public:
   void pv_instability(double bestMoveChanges) { unstablePvFactor = 1 + bestMoveChanges; }
   int available_time() const { return int(optimumSearchTime * unstablePvFactor * 0.71); }
   int maximum_time() const { return maximumSearchTime; }
+  int time_contempt() const { return timeContempt; }
 
 private:
   int optimumSearchTime;
   int maximumSearchTime;
   double unstablePvFactor;
+  int timeContempt;
 };
 
 #endif // #ifndef TIMEMAN_H_INCLUDED
