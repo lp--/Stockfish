@@ -52,6 +52,9 @@ using namespace Search;
 
 namespace {
 
+  // Set to true to force running with one thread. Used for debugging
+  const bool FakeSplit = false;
+
   // Different node types, used as template parameter
   enum NodeType { Root, PV, NonPV };
 
@@ -984,8 +987,8 @@ moves_loop: // When in check and at SpNode search starts from here
       {
           assert(bestValue > -VALUE_INFINITE && bestValue < beta);
 
-          thisThread->split(pos, ss, alpha, beta, &bestValue, &bestMove,
-                            depth, moveCount, &mp, NT, cutNode);
+          thisThread->split<FakeSplit>(pos, ss, alpha, beta, &bestValue, &bestMove,
+                                       depth, moveCount, &mp, NT, cutNode);
 
           if (Signals.stop || thisThread->cutoff_occurred())
               return VALUE_ZERO;
