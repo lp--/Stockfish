@@ -73,6 +73,7 @@ namespace {
   size_t PVIdx;
   TimeManager TimeMgr;
   double BestMoveChanges;
+  int previousDepth = INT_MAX;
   Value DrawValue[COLOR_NB];
   HistoryStats History;
   GainsStats Gains;
@@ -367,8 +368,11 @@ namespace {
             // Stop the search if only one legal move is available or all
             // of the available time has been used.
             if (   RootMoves.size() == 1
-                || Time::now() - SearchTime > TimeMgr.available_time())
+		   || Time::now() - SearchTime > TimeMgr.available_time() >>
+		   ( depth > previousDepth && BestMoveChanges < 1./4096 ? depth - previousDepth  : 0 ) )
             {
+	        if (RootMoves.size() > 1) previousDepth = depth;
+
                 // If we are allowed to ponder do not stop the search now but
                 // keep pondering until the GUI sends "ponderhit" or "stop".
                 if (Limits.ponder)
