@@ -371,7 +371,7 @@ namespace {
             // of the available time has been used.
             if (   RootMoves.size() == 1
 		   || Time::now() - SearchTime > TimeMgr.available_time() >>
-		   ( depth > previousDepth && BestMoveChanges < 1./4096 ? depth - previousDepth  : 0 ) )
+		   ( depth >= previousDepth && BestMoveChanges < 1./(1 << depth/2) ? 1 : 0 ) )
             {
 	        if (RootMoves.size() > 1) previousDepth = depth;
 
