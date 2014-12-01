@@ -195,7 +195,7 @@ void Search::think() {
   RootInTB = false;
 
   Contempt[0] =  Options["Contempt"] * PawnValueEg / 100; // From centipawns
-  Contempt[1] = (Options["Contempt"] + 24) * PawnValueEg / 100;
+  Contempt[1] = (Options["Contempt"] + 12) * PawnValueEg / 100;
   
   if (RootMoves.empty())
   {
