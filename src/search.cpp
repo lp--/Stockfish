@@ -41,8 +41,10 @@ namespace Search {
   LimitsType Limits;
   std::vector<RootMove> RootMoves;
   Position RootPos;
+  Color RootColor;
   Time::point SearchTime;
   StateStackPtr SetupStates;
+  Value Contempt[2]; // [bestValue > VALUE_DRAW]
   int TBCardinality;
   uint64_t TBHits;
   bool RootInTB;
@@ -187,14 +189,14 @@ template uint64_t Search::perft<true>(Position& pos, Depth depth);
 
 void Search::think() {
 
-  TimeMgr.init(Limits, RootPos.game_ply(), RootPos.side_to_move());
+  RootColor = RootPos.side_to_move();
+  TimeMgr.init(Limits, RootPos.game_ply(), RootColor);
   TBHits = TBCardinality = 0;
   RootInTB = false;
 
-  int cf = Options["Contempt"] * PawnValueEg / 100; // From centipawns
-  DrawValue[ RootPos.side_to_move()] = VALUE_DRAW - Value(cf);
-  DrawValue[~RootPos.side_to_move()] = VALUE_DRAW + Value(cf);
-
+  Contempt[0] =  Options["Contempt"] * PawnValueEg / 100; // From centipawns
+  Contempt[1] = (Options["Contempt"] + 24) * PawnValueEg / 100;
+  
   if (RootMoves.empty())
   {
       RootMoves.push_back(MOVE_NONE);
@@ -347,6 +349,9 @@ namespace {
             while (true)
             {
                 bestValue = search<Root, false>(pos, ss, alpha, beta, depth, false);
+
+                DrawValue[ RootColor] = VALUE_DRAW - Contempt[bestValue > VALUE_DRAW];
+                DrawValue[~RootColor] = VALUE_DRAW + Contempt[bestValue > VALUE_DRAW];
 
                 // Bring the best move to the front. It is critical that sorting
                 // is done with a stable algorithm because all the values but the
