@@ -426,7 +426,7 @@ namespace {
             // of the available time has been used.
             if (   RootMoves.size() == 1
                 || Time::now() - SearchTime > TimeMgr.available_time()
-                 * (failedLow ? 8 : 5)/8  )
+                 * (failedLow ? 8 : 3)/8  )
             {
                 // If we are allowed to ponder do not stop the search now but
                 // keep pondering until the GUI sends "ponderhit" or "stop".
@@ -779,15 +779,10 @@ moves_loop: // When in check and at SpNode search starts from here
       else
           ++moveCount;
 
-      if (RootNode)
-      {
-          Signals.firstRootMove = (moveCount == 1);
-
-          if (thisThread == Threads.main() && Time::now() - SearchTime > 3000)
-              sync_cout << "info depth " << depth / ONE_PLY
-                        << " currmove " << UCI::move(move, pos.is_chess960())
-                        << " currmovenumber " << moveCount + PVIdx << sync_endl;
-      }
+      if (RootNode  && thisThread == Threads.main() && Time::now() - SearchTime > 3000)
+          sync_cout << "info depth " << depth / ONE_PLY
+                    << " currmove " << UCI::move(move, pos.is_chess960())
+                    << " currmovenumber " << moveCount + PVIdx << sync_endl;
 
       if (PvNode)
           (ss+1)->pv = NULL;
@@ -1635,18 +1630,10 @@ void check_time() {
   if (Limits.ponder)
       return;
 
-  if (Limits.use_time_management())
-  {
-      bool stillAtFirstMove =    Signals.firstRootMove
-                             && !Signals.failedLowAtRoot
-                             &&  elapsed > TimeMgr.available_time() * 75 / 100;
-
-      if (   stillAtFirstMove
-          || elapsed > TimeMgr.maximum_time() - 2 * TimerThread::Resolution)
-          Signals.stop = true;
-  }
-  else if (Limits.movetime && elapsed >= Limits.movetime)
-      Signals.stop = true;
+  if (( Limits.use_time_management() 
+        && elapsed > TimeMgr.maximum_time() - 2 * TimerThread::Resolution)
+        || (Limits.movetime && elapsed >= Limits.movetime) )
+        Signals.stop = true;
 
   else if (Limits.nodes)
   {

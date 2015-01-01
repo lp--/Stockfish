@@ -363,7 +363,7 @@ void ThreadPool::start_thinking(const Position& pos, const LimitsType& limits,
 
   SearchTime = Time::now(); // As early as possible
 
-  Signals.stopOnPonderhit = Signals.firstRootMove = false;
+  Signals.stopOnPonderhit = false;
   Signals.stop = Signals.failedLowAtRoot = false;
 
   RootMoves.clear();
