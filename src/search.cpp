@@ -320,7 +320,7 @@ namespace {
     {
         // Age out PV variability metric
         BestMoveChanges *= 0.5;
-	bool failedLow = false;
+        bool failedLow = false;
 
         // Save the last iteration's scores before first PV line is searched and
         // all the move scores except the (new) PV are set to -VALUE_INFINITE.
@@ -426,7 +426,7 @@ namespace {
             // of the available time has been used.
             if (   RootMoves.size() == 1
                 || Time::now() - SearchTime > TimeMgr.available_time()
-                 * (failedLow ? 8 : 3)/8  )
+		   * (failedLow ? 8 : 3)/8 )
             {
                 // If we are allowed to ponder do not stop the search now but
                 // keep pondering until the GUI sends "ponderhit" or "stop".
