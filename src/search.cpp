@@ -426,7 +426,7 @@ namespace {
             // of the available time has been used.
             if (   RootMoves.size() == 1
                 || Time::now() - SearchTime > TimeMgr.available_time()
-		   * (failedLow ? 4 : 1)/4 )
+		   * (failedLow ? 3 : 1)/3 )
             {
                 // If we are allowed to ponder do not stop the search now but
                 // keep pondering until the GUI sends "ponderhit" or "stop".
