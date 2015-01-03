@@ -86,6 +86,8 @@ namespace {
   size_t PVIdx;
   TimeManager TimeMgr;
   double BestMoveChanges;
+  bool failedLow;
+  int failedLowCount;
   Value DrawValue[COLOR_NB];
   HistoryStats History;
   GainsStats Gains;
@@ -299,6 +301,7 @@ namespace {
 
     depth = DEPTH_ZERO;
     BestMoveChanges = 0;
+    failedLowCount = failedLow = false;
     bestValue = delta = alpha = -VALUE_INFINITE;
     beta = VALUE_INFINITE;
 
@@ -320,7 +323,8 @@ namespace {
     {
         // Age out PV variability metric
         BestMoveChanges *= 0.5;
-        bool failedLow = false;
+        failedLowCount *= failedLow; 
+        failedLow = false;
 
         // Save the last iteration's scores before first PV line is searched and
         // all the move scores except the (new) PV are set to -VALUE_INFINITE.
@@ -377,6 +381,7 @@ namespace {
                     beta = (alpha + beta) / 2;
                     alpha = std::max(bestValue - delta, -VALUE_INFINITE);
 
+		    failedLowCount += !failedLow;
                     Signals.failedLowAtRoot = failedLow = true;
                     Signals.stopOnPonderhit = false;
                 }
@@ -426,7 +431,7 @@ namespace {
             // of the available time has been used.
             if (   RootMoves.size() == 1
                 || Time::now() - SearchTime > TimeMgr.available_time()
-		   * (failedLow ? 3 : 1)/3 )
+		   * 75 / ( 66 + ( !failedLow + (failedLowCount < 1))*92 ) )
             {
                 // If we are allowed to ponder do not stop the search now but
                 // keep pondering until the GUI sends "ponderhit" or "stop".
