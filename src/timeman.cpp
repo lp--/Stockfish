@@ -86,7 +86,7 @@ void TimeManager::init(const Search::LimitsType& limits, Color us, int ply)
 
   // Initialize unstablePvFactor to 1 and search times to maximum values
   unstablePvFactor = 1;
-  optimumSearchTime = maximumSearchTime = std::max(limits.time[us], minThinkingTime);
+  optimumSearchTime = maximumSearchTime = limits.time[us];
 
   const int MaxMTG = limits.movestogo ? std::min(limits.movestogo, MoveHorizon) : MoveHorizon;
 
