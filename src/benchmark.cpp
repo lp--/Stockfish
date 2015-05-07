@@ -128,8 +128,11 @@ void benchmark(const Position& current, istream& is) {
   Options["Threads"] = threads;
   Search::reset();
 
-  if (limitType == "time")
-      limits.movetime = stoi(limit); // movetime is in ms
+  if (limitType == "movetime")
+      limits.movetime =  stoi(limit); // movetime is in ms
+
+  else if (limitType == "time")
+      limits.time[WHITE] = limits.time[BLACK] = stoi(limit);
 
   else if (limitType == "nodes")
       limits.nodes = stoi(limit);
