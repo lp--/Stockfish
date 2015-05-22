@@ -788,6 +788,7 @@ moves_loop: // When in check and at SpNode search starts from here
     CheckInfo ci(pos);
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
     improving =   ss->staticEval >= (ss-2)->staticEval
+               || ss->ply < 3
                || ss->staticEval == VALUE_NONE
                ||(ss-2)->staticEval == VALUE_NONE;
 
