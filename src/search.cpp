@@ -70,7 +70,7 @@ namespace {
   Value futility_margin(Depth d) { return Value(200 * d); }
 
   // Futility and reductions lookup tables, initialized at startup
-  int FutilityMoveCounts[2][16];  // [improving][depth]
+  int FutilityMoveCounts[3][16];  // [improving][depth]
   Depth Reductions[2][2][64][64]; // [pv][improving][depth][moveNumber]
 
   template <bool PvNode> Depth reduction(bool i, Depth d, int mn) {
@@ -176,6 +176,7 @@ void Search::init() {
   {
       FutilityMoveCounts[0][d] = int(2.4 + 0.773 * pow(d + 0.00, 1.8));
       FutilityMoveCounts[1][d] = int(2.9 + 1.045 * pow(d + 0.49, 1.8));
+      FutilityMoveCounts[2][d] = FutilityMoveCounts[0][d]-1;
   }
 }
 
@@ -787,9 +788,8 @@ moves_loop: // When in check and at SpNode search starts from here
     MovePicker mp(pos, ttMove, depth, History, CounterMovesHistory, countermove, ss);
     CheckInfo ci(pos);
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
-    improving =  std::min( std::max( int( ss->staticEval - (ss-2)->staticEval )  
-               *(ss->staticEval != VALUE_NONE) * ((ss-2)->staticEval != VALUE_NONE), 
-               -100) + 100, 200)/20;
+    improving = (ss->staticEval - (ss-2)->staticEval ) * (ss->staticEval != VALUE_NONE)
+               *((ss-2)->staticEval != VALUE_NONE) * (depth + 1);
 
     singularExtensionNode =   !RootNode
                            && !SpNode
@@ -889,7 +889,7 @@ moves_loop: // When in check and at SpNode search starts from here
       {
           // Move count based pruning
           if (   depth < 16 * ONE_PLY
-              && moveCount >= FutilityMoveCounts[improving > 4][depth] - (improving < 3))
+		 && moveCount >= FutilityMoveCounts[(improving >= 0) + (improving < -200)*2][depth])
           {
               if (SpNode)
                   splitPoint->spinlock.acquire();
@@ -897,7 +897,7 @@ moves_loop: // When in check and at SpNode search starts from here
               continue;
           }
 
-          predictedDepth = newDepth - reduction<PvNode>(improving > 4, depth, moveCount);
+          predictedDepth = newDepth - reduction<PvNode>(improving >= 0, depth, moveCount);
 
           // Futility pruning: parent node
           if (predictedDepth < 7 * ONE_PLY)
@@ -951,7 +951,7 @@ moves_loop: // When in check and at SpNode search starts from here
           &&  move != ss->killers[0]
           &&  move != ss->killers[1])
       {
-          ss->reduction = reduction<PvNode>(improving > 4, depth, moveCount);
+          ss->reduction = reduction<PvNode>(improving >= 0, depth, moveCount);
 
           if (   (!PvNode && cutNode)
               || (   History[pos.piece_on(to_sq(move))][to_sq(move)] < VALUE_ZERO
