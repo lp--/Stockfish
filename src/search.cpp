@@ -70,8 +70,8 @@ namespace {
   Value futility_margin(Depth d) { return Value(200 * d); }
 
   // Futility and reductions lookup tables, initialized at startup
-  int FutilityMoveCounts[3][16];  // [improving][depth]
-  Depth Reductions[2][2][64][64]; // [pv][improving][depth][moveNumber]
+  int FutilityMoveCounts[2][16];  // [worse][depth]
+  Depth Reductions[2][2][64][64]; // [pv][worse][depth][moveNumber]
 
   template <bool PvNode> Depth reduction(bool i, Depth d, int mn) {
     return Reductions[PvNode][i][std::min(d, 63 * ONE_PLY)][std::min(mn, 63)];
@@ -158,25 +158,24 @@ void Search::init() {
   const double K[][2] = {{ 0.83, 2.25 }, { 0.50, 3.00 }};
 
   for (int pv = 0; pv <= 1; ++pv)
-      for (int imp = 0; imp <= 1; ++imp)
+      for (int worse = 0; worse <= 1; ++worse)
           for (int d = 1; d < 64; ++d)
               for (int mc = 1; mc < 64; ++mc)
               {
                   double r = K[pv][0] + log(d) * log(mc) / K[pv][1];
 
                   if (r >= 1.5)
-                      Reductions[pv][imp][d][mc] = int(r) * ONE_PLY;
+                      Reductions[pv][worse][d][mc] = int(r) * ONE_PLY;
 
                   // Increase reduction when eval is not improving
-                  if (!pv && !imp && Reductions[pv][imp][d][mc] >= 2 * ONE_PLY)
-                      Reductions[pv][imp][d][mc] += ONE_PLY;
+                  if (!pv && worse && Reductions[pv][!worse][d][mc] >= 2 * ONE_PLY)
+                      Reductions[pv][worse][d][mc] += ONE_PLY;
               }
 
   for (int d = 0; d < 16; ++d)
   {
-      FutilityMoveCounts[0][d] = int(2.4 + 0.773 * pow(d + 0.00, 1.8));
-      FutilityMoveCounts[1][d] = int(2.9 + 1.045 * pow(d + 0.49, 1.8));
-      FutilityMoveCounts[2][d] = FutilityMoveCounts[0][d]-1;
+      FutilityMoveCounts[0][d] = int(2.9 + 1.045 * pow(d + 0.49, 1.8));
+      FutilityMoveCounts[1][d] = int(2.4 + 0.773 * pow(d + 0.00, 1.8));
   }
 }
 
@@ -533,7 +532,7 @@ namespace {
     Value bestValue, value, ttValue, eval, nullValue, futilityValue;
     bool ttHit, inCheck, givesCheck, singularExtensionNode;
     bool captureOrPromotion, dangerous, doFullDepthSearch;
-    int improving, moveCount, quietCount;
+    int worse, moveCount, quietCount;
 
     // Step 1. Initialize node
     Thread* thisThread = pos.this_thread();
@@ -788,8 +787,8 @@ moves_loop: // When in check and at SpNode search starts from here
     MovePicker mp(pos, ttMove, depth, History, CounterMovesHistory, countermove, ss);
     CheckInfo ci(pos);
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
-    improving = (ss->staticEval - (ss-2)->staticEval ) * (ss->staticEval != VALUE_NONE)
-               *((ss-2)->staticEval != VALUE_NONE) * (depth + 1);
+    worse =  ((ss-2)->staticEval - ss->staticEval ) * (ss->staticEval != VALUE_NONE)
+           * ((ss-2)->staticEval != VALUE_NONE) * (depth + 1);
 
     singularExtensionNode =   !RootNode
                            && !SpNode
@@ -889,7 +888,7 @@ moves_loop: // When in check and at SpNode search starts from here
       {
           // Move count based pruning
           if (   depth < 16 * ONE_PLY
-		 && moveCount >= FutilityMoveCounts[(improving >= 0) + (improving < -200)*2][depth])
+		 && moveCount >= FutilityMoveCounts[worse > 0][depth - (worse > 200)])
           {
               if (SpNode)
                   splitPoint->spinlock.acquire();
@@ -897,7 +896,7 @@ moves_loop: // When in check and at SpNode search starts from here
               continue;
           }
 
-          predictedDepth = newDepth - reduction<PvNode>(improving >= 0, depth, moveCount);
+          predictedDepth = newDepth - reduction<PvNode>(worse > 0, depth, moveCount);
 
           // Futility pruning: parent node
           if (predictedDepth < 7 * ONE_PLY)
@@ -951,7 +950,7 @@ moves_loop: // When in check and at SpNode search starts from here
           &&  move != ss->killers[0]
           &&  move != ss->killers[1])
       {
-          ss->reduction = reduction<PvNode>(improving >= 0, depth, moveCount);
+          ss->reduction = reduction<PvNode>(worse > 0, depth, moveCount);
 
           if (   (!PvNode && cutNode)
               || (   History[pos.piece_on(to_sq(move))][to_sq(move)] < VALUE_ZERO
