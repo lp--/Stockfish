@@ -787,7 +787,7 @@ moves_loop: // When in check and at SpNode search starts from here
     MovePicker mp(pos, ttMove, depth, History, CounterMovesHistory, countermove, ss);
     CheckInfo ci(pos);
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
-    worse =  ((ss-2)->staticEval - ss->staticEval ) * (ss->staticEval != VALUE_NONE)
+    worse =  ((ss-2)->staticEval - ss->staticEval) * (ss->staticEval != VALUE_NONE)
            * ((ss-2)->staticEval != VALUE_NONE) * (depth + 1);
 
     singularExtensionNode =   !RootNode
@@ -888,7 +888,7 @@ moves_loop: // When in check and at SpNode search starts from here
       {
           // Move count based pruning
           if (   depth < 16 * ONE_PLY
-		 && moveCount >= FutilityMoveCounts[worse > 0][depth - (worse > 200)])
+              && moveCount >= FutilityMoveCounts[worse > 0][depth] - (depth > 1 && worse > 200))
           {
               if (SpNode)
                   splitPoint->spinlock.acquire();
