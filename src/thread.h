@@ -39,6 +39,7 @@ struct Thread;
 const size_t MAX_THREADS = 128;
 const size_t MAX_SPLITPOINTS_PER_THREAD = 8;
 const size_t MAX_SLAVES_PER_SPLITPOINT = 4;
+const size_t MAX_THREADS_PER_GROUP = 2;
 
 class Spinlock {
 
@@ -68,7 +69,8 @@ struct SplitPoint {
   Value beta;
   int nodeType;
   bool cutNode;
-
+  size_t groupIdx;
+  
   // Const pointers to shared data
   MovePicker* movePicker;
   SplitPoint* parentSplitPoint;
@@ -112,10 +114,11 @@ struct Thread : public ThreadBase {
 
   Thread();
   virtual void idle_loop();
+  virtual void id_loop();
   bool cutoff_occurred() const;
   bool can_join(const SplitPoint* sp) const;
 
-  void split(Position& pos, Search::Stack* ss, Value alpha, Value beta, Value* bestValue, Move* bestMove,
+  void split(Position& sp_pos, Search::Stack* ss, Value alpha, Value beta, Value* bestValue, Move* bestMove,
              Depth depth, int moveCount, MovePicker* movePicker, int nodeType, bool cutNode);
 
   SplitPoint splitPoints[MAX_SPLITPOINTS_PER_THREAD];
@@ -123,11 +126,18 @@ struct Thread : public ThreadBase {
   Material::Table materialTable;
   Endgames endgames;
   Position* activePosition;
-  size_t idx;
+  size_t idx, PVIdx;
   int maxPly;
   SplitPoint* volatile activeSplitPoint;
   volatile size_t splitPointsSize;
   volatile bool searching;
+
+  // Data per thread.
+  Position pos;
+  Search::RootMoveVector rootMoves;
+  Search::Stack stack[MAX_PLY+4];
+  Depth rootDepth;
+  size_t groupIdx;
 };
 
 
@@ -138,6 +148,7 @@ struct MainThread : public Thread {
   virtual void idle_loop();
   void join();
   volatile bool thinking = true; // Avoid a race with start_thinking()
+  std::bitset<MAX_THREADS> slavesMask;
 };
 
 struct TimerThread : public ThreadBase {
@@ -162,6 +173,7 @@ struct ThreadPool : public std::vector<Thread*> {
   MainThread* main() { return static_cast<MainThread*>(at(0)); }
   void read_uci_options();
   Thread* available_slave(const SplitPoint* sp) const;
+  uint64_t nodes_searched();
   void start_thinking(const Position&, const Search::LimitsType&, Search::StateStackPtr&);
 
   Depth minimumSplitDepth;

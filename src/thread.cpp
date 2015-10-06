@@ -110,6 +110,9 @@ bool Thread::cutoff_occurred() const {
 
 bool Thread::can_join(const SplitPoint* sp) const {
 
+  if(groupIdx != sp->groupIdx)
+      return false;
+
   if (searching)
       return false;
 
@@ -132,7 +135,7 @@ bool Thread::can_join(const SplitPoint* sp) const {
 // leave their idle loops and call search(). When all threads have returned from
 // search() then split() returns.
 
-void Thread::split(Position& pos, Stack* ss, Value alpha, Value beta, Value* bestValue,
+void Thread::split(Position& sp_pos, Stack* ss, Value alpha, Value beta, Value* bestValue,
                    Move* bestMove, Depth depth, int moveCount,
                    MovePicker* movePicker, int nodeType, bool cutNode) {
 
@@ -145,6 +148,7 @@ void Thread::split(Position& pos, Stack* ss, Value alpha, Value beta, Value* bes
   SplitPoint& sp = splitPoints[splitPointsSize];
 
   sp.spinlock.acquire(); // No contention here until we don't increment splitPointsSize
+  spinlock.acquire();
 
   sp.master = this;
   sp.parentSplitPoint = activeSplitPoint;
@@ -158,15 +162,17 @@ void Thread::split(Position& pos, Stack* ss, Value alpha, Value beta, Value* bes
   sp.cutNode = cutNode;
   sp.movePicker = movePicker;
   sp.moveCount = moveCount;
-  sp.pos = &pos;
+  sp.pos = &sp_pos;
   sp.nodes = 0;
   sp.cutoff = false;
   sp.ss = ss;
   sp.allSlavesSearching = true; // Must be set under lock protection
+  sp.groupIdx = groupIdx;
 
   ++splitPointsSize;
   activeSplitPoint = &sp;
   activePosition = nullptr;
+  spinlock.release();
 
   // Try to allocate available threads
   Thread* slave;
@@ -194,28 +200,29 @@ void Thread::split(Position& pos, Stack* ss, Value alpha, Value beta, Value* bes
 
   Thread::idle_loop(); // Force a call to base class idle_loop()
 
+  sp.spinlock.acquire();
+  spinlock.acquire();
+
   // In the helpful master concept, a master can help only a sub-tree of its
   // split point and because everything is finished here, it's not possible
   // for the master to be booked.
   assert(!searching);
   assert(!activePosition);
 
+  searching = true;
+
   // We have returned from the idle loop, which means that all threads are
   // finished. Note that decreasing splitPointsSize must be done under lock
   // protection to avoid a race with Thread::can_join().
-  spinlock.acquire();
-
-  searching = true;
   --splitPointsSize;
   activeSplitPoint = sp.parentSplitPoint;
   activePosition = &pos;
-
-  spinlock.release();
-
-  // Split point data cannot be changed now, so no need to lock protect
   pos.set_nodes_searched(pos.nodes_searched() + sp.nodes);
   *bestMove = sp.bestMove;
   *bestValue = sp.bestValue;
+
+  spinlock.release();
+  sp.spinlock.release();
 }
 
 
@@ -260,13 +267,7 @@ void MainThread::idle_loop() {
 
       if (!exit)
       {
-          searching = true;
-
           Search::think();
-
-          assert(searching);
-
-          searching = false;
       }
   }
 }
@@ -345,6 +346,16 @@ Thread* ThreadPool::available_slave(const SplitPoint* sp) const {
   return nullptr;
 }
 
+// ThreadPool::nodes_searched() returns the number of nodes searched.
+
+uint64_t ThreadPool::nodes_searched() {
+
+    uint64_t nodes = 0;
+    for (Thread *th : *this)
+        nodes += th->pos.nodes_searched();
+    return nodes;
+}
+
 
 // ThreadPool::start_thinking() wakes up the main thread sleeping in
 // MainThread::idle_loop() and starts a new search, then returns immediately.
@@ -356,8 +367,8 @@ void ThreadPool::start_thinking(const Position& pos, const LimitsType& limits,
   Signals.stopOnPonderhit = Signals.firstRootMove = false;
   Signals.stop = Signals.failedLowAtRoot = false;
 
-  RootMoves.clear();
-  RootPos = pos;
+  main()->rootMoves.clear();
+  main()->pos = pos;
   Limits = limits;
   if (states.get()) // If we don't set a new position, preserve current state
   {
@@ -368,7 +379,7 @@ void ThreadPool::start_thinking(const Position& pos, const LimitsType& limits,
   for (const auto& m : MoveList<LEGAL>(pos))
       if (   limits.searchmoves.empty()
           || std::count(limits.searchmoves.begin(), limits.searchmoves.end(), m))
-          RootMoves.push_back(RootMove(m));
+          main()->rootMoves.push_back(RootMove(m));
 
   main()->thinking = true;
   main()->notify_one(); // Wake up main thread: 'thinking' must be already set
