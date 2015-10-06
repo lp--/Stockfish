@@ -567,7 +567,7 @@ namespace {
     // Start search for the other threads.
     for (Thread* th : Threads)
     {
-      if(((th->idx - 1) % MAX_THREADS_PER_GROUP == 0))
+      if(((th->idx - 1) % MAX_THREADS_PER_GROUP == 0) || th  == Threads.main())
         th->searching = true;
     }
 
