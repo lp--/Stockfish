@@ -295,7 +295,7 @@ void Search::think() {
               Position pos(mth->pos, th);
               th->pos = pos;
               th->rootMoves = mth->rootMoves;
-              th->groupIdx = th->idx/(MAX_THREADS_PER_GROUP);
+              th->groupIdx = (th->idx - 1)/(MAX_THREADS_PER_GROUP) + 1;
           }
 	  else
               th->groupIdx = 0;
@@ -567,7 +567,7 @@ namespace {
     // Start search for the other threads.
     for (Thread* th : Threads)
     {
-      if(th->idx % MAX_THREADS_PER_GROUP == 0)
+      if(((th->idx - 1) % MAX_THREADS_PER_GROUP == 0))
         th->searching = true;
     }
 
