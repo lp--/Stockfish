@@ -128,6 +128,7 @@ namespace {
 
   EasyMoveManager EasyMove;
   double BestMoveChanges;
+  int stopCount;
   Value DrawValue[COLOR_NB];
   CounterMovesHistoryStats CounterMovesHistory;
 
@@ -358,6 +359,7 @@ void Thread::search(bool isMainThread) {
       easyMove = EasyMove.get(rootPos.key());
       EasyMove.clear();
       BestMoveChanges = 0;
+      stopCount = 2;
       TT.new_search();
   }
 
@@ -472,18 +474,20 @@ void Thread::search(bool isMainThread) {
               sync_cout << UCI::pv(rootPos, rootDepth, alpha, beta) << sync_endl;
       }
 
-      if (!isMainThread)
-          continue;
+      if (isMainThread)
+      {
 
-      // If skill level is enabled and time is up, pick a sub-optimal best move
-      if (skill.enabled() && skill.time_to_pick(rootDepth))
-          skill.pick_best(multiPV);
+        // If skill level is enabled and time is up, pick a sub-optimal best move
+        if (skill.enabled() && skill.time_to_pick(rootDepth))
+            skill.pick_best(multiPV);
 
-      // Have we found a "mate in x"?
-      if (   Limits.mate
-          && bestValue >= VALUE_MATE_IN_MAX_PLY
-          && VALUE_MATE - bestValue <= 2 * Limits.mate)
-          Signals.stop = true;
+        // Have we found a "mate in x"?
+        if (   Limits.mate
+            && bestValue >= VALUE_MATE_IN_MAX_PLY
+            && VALUE_MATE - bestValue <= 2 * Limits.mate)
+            Signals.stop = true;
+      }
+      
 
       // Do we have time for the next iteration? Can we stop searching now?
       if (Limits.use_time_management())
@@ -503,19 +507,25 @@ void Thread::search(bool isMainThread) {
                       && BestMoveChanges < 0.03
                       && Time.elapsed() > Time.available() / 10))
               {
+		stopCount += 2;
                   // If we are allowed to ponder do not stop the search now but
                   // keep pondering until the GUI sends "ponderhit" or "stop".
+		if( isMainThread || stopCount > int(Threads.size()) ){
                   if (Limits.ponder)
                       Signals.stopOnPonderhit = true;
                   else
                       Signals.stop = true;
+                }
               }
           }
 
-          if (rootMoves[0].pv.size() >= 3)
-              EasyMove.update(rootPos, rootMoves[0].pv);
-          else
-              EasyMove.clear();
+          if(isMainThread)
+	  {
+            if (rootMoves[0].pv.size() >= 3)
+               EasyMove.update(rootPos, rootMoves[0].pv);
+            else
+               EasyMove.clear();
+	  }
       }
   }
 
@@ -1030,8 +1040,10 @@ moves_loop: // When in check search starts from here
               // We record how often the best move has been changed in each
               // iteration. This information is used for time management: When
               // the best move changes frequently, we allocate some more time.
-              if (moveCount > 1 && thisThread == Threads.main())
+              if (moveCount > 1 && thisThread == Threads.main()){
                   ++BestMoveChanges;
+                  stopCount = 2;
+	      }
           }
           else
               // All other moves but the PV are set to the lowest value: this is
