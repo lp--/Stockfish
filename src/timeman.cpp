@@ -130,5 +130,7 @@ void TimeManagement::init(Search::LimitsType& limits, Color us, int ply)
   if (Options["Ponder"])
       optimumTime += optimumTime / 4;
 
-  optimumTime = std::min(optimumTime, maximumTime);
+  optimumTime = std::min(optimumTime, maximumTime)
+               // adjust optimum time for playing with increment                
+               *(limits.inc[us] ? std::min(std::max(0.34*limits.time[us]/limits.inc[us]-0.33, 0.69), 1.03) : 1);
 }
