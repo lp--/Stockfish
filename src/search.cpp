@@ -1590,7 +1590,7 @@ void TimerThread::check_time() {
   {
       bool stillAtFirstMove =    Signals.firstRootMove
                              && !Signals.failedLowAtRoot
-                             &&  elapsed > Time.available() * 3 / 4;
+                             &&  elapsed > Time.first_move();
 
       if (   stillAtFirstMove
           || elapsed > Time.maximum() - 2 * TimerThread::Resolution)
