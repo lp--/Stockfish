@@ -128,6 +128,7 @@ namespace {
 
   EasyMoveManager EasyMove;
   double BestMoveChanges;
+  bool failedLow;
   Value DrawValue[COLOR_NB];
   CounterMovesHistoryStats CounterMovesHistory;
 
@@ -390,7 +391,7 @@ void Thread::search(bool isMainThread) {
 
       // Age out PV variability metric
       if (isMainThread)
-          BestMoveChanges *= 0.5;
+	BestMoveChanges *= 0.5, failedLow = false;
 
       // Save the last iteration's scores before first PV line is searched and
       // all the move scores except the (new) PV are set to -VALUE_INFINITE.
@@ -451,7 +452,7 @@ void Thread::search(bool isMainThread) {
 
                   if (isMainThread)
                   {
-                      Signals.failedLowAtRoot = true;
+                      Signals.failedLowAtRoot = failedLow = true;
                       Signals.stopOnPonderhit = false;
                   }
               }
@@ -1053,7 +1054,7 @@ moves_loop: // When in check search starts from here
               // iteration. This information is used for time management: When
               // the best move changes frequently, we allocate some more time.
               if (moveCount > 1 && thisThread == Threads.main())
-                  ++BestMoveChanges;
+                  BestMoveChanges += failedLow? 1 : 0.5;
           }
           else
               // All other moves but the PV are set to the lowest value: this is
