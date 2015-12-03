@@ -127,8 +127,9 @@ void TimeManagement::init(Search::LimitsType& limits, Color us, int ply)
       maximumTime = std::min(t2, maximumTime);
   }
 
-  if (Options["Ponder"])
-      optimumTime += optimumTime / 4;
+  //  FIXME: tune additional time for ponder on when testing becomes possible on fishtest 
+  //  if (Options["Ponder"])
+  //    optimumTime += optimumTime / 4;
 
-  optimumTime = std::min(optimumTime, maximumTime);
+  optimumTime = std::min(optimumTime*5/4, maximumTime);
 }
