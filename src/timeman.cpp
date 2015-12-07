@@ -27,7 +27,7 @@
 
 TimeManagement Time; // Our global time management object
 
-int _AvailableFactor = 76;
+int _AvailableFactor = 123;
 TUNE (_AvailableFactor);
 
 namespace {
