@@ -413,7 +413,7 @@ void Thread::search() {
 
       // Age out PV variability metric
       if (isMainThread)
-          BestMoveChanges *= 0.505, failedLow = false;
+          BestMoveChanges *= 0.5, failedLow = false;
 
       // Save the last iteration's scores before first PV line is searched and
       // all the move scores except the (new) PV are set to -VALUE_INFINITE.
@@ -534,8 +534,8 @@ void Thread::search() {
               // of the available time has been used or we matched an easyMove
               // from the previous search and just did a fast verification.
               if (   rootMoves.size() == 1
-                  || Time.elapsed() > Time.available() * (failedLow? 641 : 315)/640
-		  || ( easyPlayed = (   rootMoves[0].pv[0] == easyMove
+                  || Time.elapsed() > Time.available() >> !failedLow
+                  || ( easyPlayed = ( rootMoves[0].pv[0] == easyMove
                       && BestMoveChanges < 0.03
                       && Time.elapsed() > Time.available() / 8)))
               {
