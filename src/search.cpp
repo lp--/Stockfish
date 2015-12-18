@@ -127,9 +127,9 @@ namespace {
   };
 
   EasyMoveManager EasyMove;
-  bool easyPlayed, failedLow;
+  bool easyPlayed, failedLow, FirstSearchOfGame;
   double BestMoveChanges;
-  Value DrawValue[COLOR_NB];
+  Value PreviousMoveValue, DrawValue[COLOR_NB];
   CounterMovesHistoryStats CounterMovesHistory;
 
   template <NodeType NT>
@@ -188,6 +188,9 @@ void Search::clear() {
       th->history.clear();
       th->counterMoves.clear();
   }
+
+  PreviousMoveValue = VALUE_ZERO;
+  FirstSearchOfGame = true;
 }
 
 
@@ -333,6 +336,10 @@ void MainThread::search() {
           if (   th->completedDepth > bestThread->completedDepth
               && th->rootMoves[0].score > bestThread->rootMoves[0].score)
             bestThread = th;
+
+  PreviousMoveValue = bestThread->rootMoves[0].score;
+  FirstSearchOfGame = false;
+
 
   // Send new PV when needed.
   // FIXME: Breaks multiPV, and skill levels
@@ -534,7 +541,8 @@ void Thread::search() {
               // of the available time has been used or we matched an easyMove
               // from the previous search and just did a fast verification.
               if (   rootMoves.size() == 1
-                  || Time.elapsed() > Time.available() >> !failedLow
+                  || Time.elapsed() > Time.available() >> (!failedLow || 
+                      (bestValue >= PreviousMoveValue && !FirstSearchOfGame))
                   || ( easyPlayed = ( rootMoves[0].pv[0] == easyMove
                       && BestMoveChanges < 0.03
                       && Time.elapsed() > Time.available() / 8)))
