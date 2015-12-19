@@ -340,7 +340,6 @@ void MainThread::search() {
   PreviousMoveValue = bestThread->rootMoves[0].score;
   FirstSearchOfGame = false;
 
-
   // Send new PV when needed.
   // FIXME: Breaks multiPV, and skill levels
   if (bestThread != this)
@@ -420,7 +419,7 @@ void Thread::search() {
 
       // Age out PV variability metric
       if (isMainThread)
-          BestMoveChanges *= 0.5, failedLow = false;
+          BestMoveChanges *= 0.505, failedLow = false;
 
       // Save the last iteration's scores before first PV line is searched and
       // all the move scores except the (new) PV are set to -VALUE_INFINITE.
@@ -541,8 +540,10 @@ void Thread::search() {
               // of the available time has been used or we matched an easyMove
               // from the previous search and just did a fast verification.
               if (   rootMoves.size() == 1
-                  || Time.elapsed() > Time.available() >> (!failedLow || 
-                      (bestValue >= PreviousMoveValue && !FirstSearchOfGame))
+                  || Time.elapsed() > Time.available() * ( 641  - 226 * !failedLow 
+                      - 100 * ( bestValue >= PreviousMoveValue && !FirstSearchOfGame )  
+                      - 100 * ( bestValue >= PreviousMoveValue && !FirstSearchOfGame 
+                              && !failedLow))/640 
                   || ( easyPlayed = ( rootMoves[0].pv[0] == easyMove
                       && BestMoveChanges < 0.03
                       && Time.elapsed() > Time.available() / 8)))
