@@ -353,6 +353,9 @@ void MainThread::search() {
   std::cout << sync_endl;
 }
 
+int _NF1 = 176 , _NF2 = 125, _PB = 125, _EM = 100;
+TUNE(_NF1, _NF2, _PB, _EM);
+
 
 // Thread::search() is the main iterative deepening loop. It calls search()
 // repeatedly with increasing depth until the allocated thinking time has been
@@ -540,13 +543,13 @@ void Thread::search() {
               // of the available time has been used or we matched an easyMove
               // from the previous search and just did a fast verification.
               if (   rootMoves.size() == 1
-                  || Time.elapsed() > Time.available() * ( 641  - 176 * !failedLow 
-                      - 125 * ( bestValue >= PreviousMoveValue && !FirstSearchOfGame )  
-                      - 125 * ( bestValue >= PreviousMoveValue && !FirstSearchOfGame 
-                              && !failedLow))/640 
+                  || Time.elapsed() > Time.available() * ( 640  - _NF1 * !failedLow 
+                      - _PB * ( bestValue >= PreviousMoveValue && !FirstSearchOfGame )  
+                      - _NF2 * ( bestValue >= PreviousMoveValue && !FirstSearchOfGame 
+                              && !failedLow))/800
                   || ( easyPlayed = ( rootMoves[0].pv[0] == easyMove
                       && BestMoveChanges < 0.03
-                      && Time.elapsed() > Time.available() / 8)))
+                      && Time.elapsed() > Time.available() * 10  / _EM )))
               {
                   // If we are allowed to ponder do not stop the search now but
                   // keep pondering until the GUI sends "ponderhit" or "stop".
