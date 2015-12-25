@@ -32,11 +32,24 @@ namespace {
   enum TimeType { OptimumTime, MaxTime };
 
   const int MoveHorizon   = 50;   // Plan time management at most this many moves ahead
-  const double MaxRatio   = 7.09;  // When in trouble, we can step over reserved time with this ratio
-  const double StealRatio = 0.35; // However we must not steal time from remaining moves over this ratio
 
   // Easy move, fail low + eval drop, no fail low, no eval drop, no fail low + no eval drop 
-  const double searchFactor[5] = {0.117, 0.968, 0.726, 0.777, 0.348};
+  double searchFactor[5];
+  const double searchFactor0[5] = { 117, 968, 726, 777, 348};
+  const int slowMover0 = 89;  
+
+
+  int _MaxRatio    = 709;  // When in trouble, we can step over reserved time with this ratio
+  int _StealRatio  =  35;  // However we must not steal time from remaining moves over this ratio
+  int _XScale = 764;
+  int _XShift = 584;
+  int _Skew   = 183;
+  int _searchFactor[5] = { 617, 1468, 1226, 1277, 848};
+
+  TUNE(_MaxRatio, _StealRatio, _XScale, _XShift, _Skew, _searchFactor);
+ 
+
+
 
   // move_importance() is a skew-logistic function based on naive statistical
   // analysis of "how many games are still undecided after n half-moves". Game
@@ -45,9 +58,9 @@ namespace {
 
   double move_importance(int ply) {
 
-    const double XScale = 7.64;
-    const double XShift = 58.4;
-    const double Skew   = 0.183;
+    const double XScale = _XScale / 100.;
+    const double XShift = _XShift / 10.;
+    const double Skew   = _Skew   / 1000.;
 
     return pow((1 + exp((ply - XShift) / XScale)), -Skew) + DBL_MIN; // Ensure non-zero
   }
@@ -55,6 +68,9 @@ namespace {
   template<TimeType T>
   int remaining(int myTime, int movesToGo, int ply, int slowMover)
   {
+    double StealRatio = _StealRatio / 100.0;
+    double MaxRatio   = _MaxRatio   / 100.0;
+
     const double TMaxRatio   = (T == OptimumTime ? 1 : MaxRatio);
     const double TStealRatio = (T == OptimumTime ? 0 : StealRatio);
 
@@ -88,6 +104,11 @@ void TimeManagement::init(Search::LimitsType& limits, Color us, int ply)
   int moveOverhead    = Options["Move Overhead"];
   int slowMover       = Options["Slow Mover"];
   int npmsec          = Options["nodestime"];
+
+
+  for(int i=0; i<5; i++)
+    searchFactor[i]=(searchFactor0[i] *  slowMover0/slowMover +  _searchFactor[i] - 500)/1000.;
+
 
   // If we have to play in 'nodes as time' mode, then convert from time
   // to nodes, and use resulting values in time management formulas.

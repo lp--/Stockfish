@@ -353,6 +353,10 @@ void MainThread::search() {
   std::cout << sync_endl;
 }
 
+int _X=505, _Y=1000;
+TUNE(_X, _Y);
+
+
 
 // Thread::search() is the main iterative deepening loop. It calls search()
 // repeatedly with increasing depth until the allocated thinking time has been
@@ -419,7 +423,7 @@ void Thread::search() {
 
       // Age out PV variability metric
       if (isMainThread)
-          BestMoveChanges *= 0.505, failedLow = false;
+	BestMoveChanges *= (_X/1000.), failedLow = false;
 
       // Save the last iteration's scores before first PV line is searched and
       // all the move scores except the (new) PV are set to -VALUE_INFINITE.
@@ -1073,7 +1077,7 @@ moves_loop: // When in check search starts from here
               // iteration. This information is used for time management: When
               // the best move changes frequently, we allocate some more time.
               if (moveCount > 1 && thisThread == Threads.main())
-                  ++BestMoveChanges;
+		 BestMoveChanges+= (_Y/1000.);
           }
           else
               // All other moves but the PV are set to the lowest value: this is
