@@ -419,7 +419,7 @@ void Thread::search() {
 
       // Age out PV variability metric
       if (isMainThread)
-          BestMoveChanges *= 0.505, failedLow = false;
+          BestMoveChanges *= 0.513, failedLow = false;
 
       // Save the last iteration's scores before first PV line is searched and
       // all the move scores except the (new) PV are set to -VALUE_INFINITE.
@@ -1073,7 +1073,7 @@ moves_loop: // When in check search starts from here
               // iteration. This information is used for time management: When
               // the best move changes frequently, we allocate some more time.
               if (moveCount > 1 && thisThread == Threads.main())
-                  ++BestMoveChanges;
+                  BestMoveChanges += 1.036;
           }
           else
               // All other moves but the PV are set to the lowest value: this is
