@@ -538,7 +538,7 @@ void Thread::search() {
               // of the available time has been used or we matched an easyMove
               // from the previous search and just did a fast verification.
               if (   rootMoves.size() == 1
-                  || Time.available() * ( 640  - 160 * !failedLow 
+                  || Time.elapsed() > Time.available() * ( 640  - 160 * !failedLow 
                      - 126 * (bestValue >= PreviousMoveValue)  
                      - 124 * (bestValue >= PreviousMoveValue && !failedLow))/640
                   || ( easyPlayed = ( rootMoves[0].pv[0] == easyMove
