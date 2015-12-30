@@ -531,21 +531,17 @@ void Thread::search() {
       {
           if (!Signals.stop && !Signals.stopOnPonderhit)
           {
-              // Take some extra time if the best move has changed
-              if (rootDepth > 4 * ONE_PLY && multiPV == 1)
-                  Time.pv_instability(mainThread->bestMoveChanges/2);
-
               // Stop the search if only one legal move is available or all
               // of the available time has been used or we matched an easyMove
               // from the previous search and just did a fast verification.
               if (   rootMoves.size() == 1
-                  || Time.elapsed() > Time.available() * ( 640 * (1 + mainThread->bestMoveChanges/2)  
+                  || Time.elapsed() > Time.optimum() * ( 640 * (1 + mainThread->bestMoveChanges)  
                      - 160 * !mainThread->failedLow 
                      - 126 * (bestValue >= mainThread->previousMoveScore)  
-                     - 124 * (bestValue >= mainThread->previousMoveScore && !mainThread->failedLow))/640
+                     - 124 * (bestValue >= mainThread->previousMoveScore && !mainThread->failedLow))/661
                   || ( mainThread->easyMovePlayed = ( rootMoves[0].pv[0] == easyMove
                                                      && mainThread->bestMoveChanges < 0.03
-                                                     && Time.elapsed() > Time.available() * 25/206)))
+                                                     && Time.elapsed() > Time.optimum() * 2/17)))
               {
                   // If we are allowed to ponder do not stop the search now but
                   // keep pondering until the GUI sends "ponderhit" or "stop".
