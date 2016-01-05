@@ -488,6 +488,9 @@ void Thread::search() {
               {
                   alpha = (alpha + beta) / 2;
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
+
+		  if (mainThread)
+                      mainThread->failedLow = false; 
               }
               else
                   break;
