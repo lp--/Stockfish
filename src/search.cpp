@@ -360,13 +360,13 @@ void MainThread::search() {
 void Thread::search() {
 
   Stack stack[MAX_PLY+4], *ss = stack+2; // To allow referencing (ss-2) and (ss+2)
-  Value bestValue, alpha, beta, delta;
+  Value bestValue, alpha, beta, deltaA, deltaB;
   Move easyMove = MOVE_NONE;
   MainThread* mainThread = (this == Threads.main() ? Threads.main() : nullptr);
 
   std::memset(ss-2, 0, 5 * sizeof(Stack));
 
-  bestValue = delta = alpha = -VALUE_INFINITE;
+  bestValue = deltaA = deltaB = alpha = -VALUE_INFINITE;
   beta = VALUE_INFINITE;
   completedDepth = DEPTH_ZERO;
 
@@ -431,9 +431,9 @@ void Thread::search() {
           // Reset aspiration window starting size
           if (rootDepth >= 5 * ONE_PLY)
           {
-              delta = Value(18);
-              alpha = std::max(rootMoves[PVIdx].previousScore - delta,-VALUE_INFINITE);
-              beta  = std::min(rootMoves[PVIdx].previousScore + delta, VALUE_INFINITE);
+              deltaA = Value(19), deltaB = Value(17);
+              alpha = std::max(rootMoves[PVIdx].previousScore - deltaA,-VALUE_INFINITE);
+              beta  = std::min(rootMoves[PVIdx].previousScore + deltaB, VALUE_INFINITE);
           }
 
           // Start with a small aspiration window and, in the case of a fail
@@ -475,7 +475,7 @@ void Thread::search() {
               if (bestValue <= alpha)
               {
                   beta = (alpha + beta) / 2;
-                  alpha = std::max(bestValue - delta, -VALUE_INFINITE);
+                  alpha = std::max(bestValue - deltaA, -VALUE_INFINITE);
 
                   if (mainThread)
                   {
@@ -486,12 +486,12 @@ void Thread::search() {
               else if (bestValue >= beta)
               {
                   alpha = (alpha + beta) / 2;
-                  beta = std::min(bestValue + delta, VALUE_INFINITE);
+                  beta = std::min(bestValue + deltaB, VALUE_INFINITE);
               }
               else
                   break;
 
-              delta += delta / 4 + 5;
+              deltaA += deltaA / 4 + 5, deltaB += deltaB / 4 + 5;
 
               assert(alpha >= -VALUE_INFINITE && beta <= VALUE_INFINITE);
           }
