@@ -88,46 +88,6 @@ namespace {
     Move best = MOVE_NONE;
   };
 
-  // EasyMoveManager structure is used to detect an 'easy move'. When the PV is
-  // stable across multiple search iterations, we can quickly return the best move.
-  struct EasyMoveManager {
-
-    void clear() {
-      stableCnt = 0;
-      expectedPosKey = 0;
-      pv[0] = pv[1] = pv[2] = MOVE_NONE;
-    }
-
-    Move get(Key key) const {
-      return expectedPosKey == key ? pv[2] : MOVE_NONE;
-    }
-
-    void update(Position& pos, const std::vector<Move>& newPv) {
-
-      assert(newPv.size() >= 3);
-
-      // Keep track of how many times in a row the 3rd ply remains stable
-      stableCnt = (newPv[2] == pv[2]) ? stableCnt + 1 : 0;
-
-      if (!std::equal(newPv.begin(), newPv.begin() + 3, pv))
-      {
-          std::copy(newPv.begin(), newPv.begin() + 3, pv);
-
-          StateInfo st[2];
-          pos.do_move(newPv[0], st[0], pos.gives_check(newPv[0], CheckInfo(pos)));
-          pos.do_move(newPv[1], st[1], pos.gives_check(newPv[1], CheckInfo(pos)));
-          expectedPosKey = pos.key();
-          pos.undo_move(newPv[1]);
-          pos.undo_move(newPv[0]);
-      }
-    }
-
-    int stableCnt;
-    Key expectedPosKey;
-    Move pv[3];
-  };
-
-  EasyMoveManager EasyMove;
   Value DrawValue[COLOR_NB];
   CounterMoveHistoryStats CounterMoveHistory;
 
@@ -329,9 +289,7 @@ void MainThread::search() {
 
   // Check if there are threads with a better score than main thread
   Thread* bestThread = this;
-  if (   !this->easyMovePlayed
-      &&  Options["MultiPV"] == 1
-      && !Skill(Options["Skill Level"]).enabled())
+  if (   Options["MultiPV"] == 1 && !Skill(Options["Skill Level"]).enabled())
   {
       for (Thread* th : Threads)
           if (   th->completedDepth > bestThread->completedDepth
@@ -389,7 +347,6 @@ void Thread::search() {
 
   Stack stack[MAX_PLY+4], *ss = stack+2; // To allow referencing (ss-2) and (ss+2)
   Value bestValue, alpha, beta, delta;
-  Move easyMove = MOVE_NONE;
   MainThread* mainThread = (this == Threads.main() ? Threads.main() : nullptr);
 
   std::memset(ss-2, 0, 5 * sizeof(Stack));
@@ -400,10 +357,7 @@ void Thread::search() {
 
   if (mainThread)
   {
-      easyMove = EasyMove.get(rootPos.key());
-      EasyMove.clear();
-      mainThread->easyMovePlayed = mainThread->failedLow = false;
-      mainThread->bestMoveChanges = 0;
+      mainThread->bestMoveChanges = mainThread->failedLow = 0;
       TT.new_search();
   }
 
@@ -540,50 +494,32 @@ void Thread::search() {
           Signals.stop = true;
 
       // Do we have time for the next iteration? Can we stop searching now?
-      if (Limits.use_time_management())
+      if (Limits.use_time_management() && !Signals.stop && !Signals.stopOnPonderhit)
       {
-          if (!Signals.stop && !Signals.stopOnPonderhit)
-          {
-              // Stop the search if only one legal move is available, or if all
-              // of the available time has been used, or if we matched an easyMove
-              // from the previous search and just did a fast verification.
-              const bool F[] = { !mainThread->failedLow,
-                                 bestValue >= mainThread->previousScore };
+          // Stop the search if only one legal move is available, or if all
+          // of the available time has been used.
+           const bool F[] = { !mainThread->failedLow,
+                              bestValue >= mainThread->previousScore, 
+                              mainThread->bestMoveChanges < 0.03 };
 
-              int improvingFactor = 640 - 160*F[0] - 126*F[1] - 124*F[0]*F[1];
-              double unstablePvFactor = 1 + mainThread->bestMoveChanges;
-
-              bool doEasyMove =   rootMoves[0].pv[0] == easyMove
-                               && mainThread->bestMoveChanges < 0.03
-                               && Time.elapsed() > Time.optimum() * 25 / 204;
-
-              if (   rootMoves.size() == 1
-                  || Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 634
-                  || (mainThread->easyMovePlayed = doEasyMove))
-              {
-                  // If we are allowed to ponder do not stop the search now but
-                  // keep pondering until the GUI sends "ponderhit" or "stop".
-                  if (Limits.ponder)
-                      Signals.stopOnPonderhit = true;
-                  else
-                      Signals.stop = true;
-              }
-          }
-
-          if (rootMoves[0].pv.size() >= 3)
-              EasyMove.update(rootPos, rootMoves[0].pv);
-          else
-              EasyMove.clear();
+           int improvingFactor = 640 - 160*F[0] - 126*F[1] - 124*F[0]*F[1] - 150*F[2];
+           double unstablePvFactor = 1 + mainThread->bestMoveChanges;
+	      
+           if (   rootMoves.size() == 1
+               || Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 634)
+           {
+               // If we are allowed to ponder do not stop the search now but
+               // keep pondering until the GUI sends "ponderhit" or "stop".
+               if (Limits.ponder)
+                   Signals.stopOnPonderhit = true;
+               else
+                   Signals.stop = true;
+            }
       }
   }
 
   if (!mainThread)
       return;
-
-  // Clear any candidate easy move that wasn't stable for the last search
-  // iterations; the second condition prevents consecutive fast moves.
-  if (EasyMove.stableCnt < 6 || mainThread->easyMovePlayed)
-      EasyMove.clear();
 
   // If skill level is enabled, swap best PV line with the sub-optimal one
   if (skill.enabled())
@@ -1107,13 +1043,6 @@ moves_loop: // When in check search starts from here
 
           if (value > alpha)
           {
-              // If there is an easy move for this position, clear it if unstable
-              if (    PvNode
-                  &&  thisThread == Threads.main()
-                  &&  EasyMove.get(pos.key())
-                  && (move != EasyMove.get(pos.key()) || moveCount > 1))
-                  EasyMove.clear();
-
               bestMove = move;
 
               if (PvNode && !rootNode) // Update pv even in fail-high case
