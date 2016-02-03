@@ -329,8 +329,7 @@ void MainThread::search() {
 
   // Check if there are threads with a better score than main thread
   Thread* bestThread = this;
-  if (   !this->easyMovePlayed
-      &&  Options["MultiPV"] == 1
+  if (   Options["MultiPV"] == 1
       && !Skill(Options["Skill Level"]).enabled())
   {
       for (Thread* th : Threads)
@@ -402,7 +401,7 @@ void Thread::search() {
   {
       easyMove = EasyMove.get(rootPos.key());
       EasyMove.clear();
-      mainThread->easyMovePlayed = mainThread->failedLow = false;
+      mainThread->failedLow = false;
       mainThread->bestMoveChanges = 0;
       TT.new_search();
   }
@@ -549,18 +548,14 @@ void Thread::search() {
               // from the previous search and just did a fast verification.
               const bool F[] = { !mainThread->failedLow,
                                  bestValue >= mainThread->previousScore,
-                                 mainThread->bestMoveChanges < 0.03 };
+                                 rootMoves[0].pv[0] == easyMove
+                                  && mainThread->bestMoveChanges < 0.03 };
 
-              int improvingFactor = 640 - 160*F[0] - 126*F[1] - 124*F[0]*F[1] - 75*F[2];
+              int improvingFactor = 640 - 160*F[0] - 126*F[1] - 124*F[0]*F[1] - 152*F[2];
               double unstablePvFactor = 1 + mainThread->bestMoveChanges;
 
-              bool doEasyMove =   rootMoves[0].pv[0] == easyMove
-                               && mainThread->bestMoveChanges < 0.03
-                               && Time.elapsed() > Time.optimum() / 8;
-
               if (   rootMoves.size() == 1
-                  || Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 560
-                  || (mainThread->easyMovePlayed = doEasyMove))
+                  || Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 634)
               {
                   // If we are allowed to ponder do not stop the search now but
                   // keep pondering until the GUI sends "ponderhit" or "stop".
@@ -583,7 +578,7 @@ void Thread::search() {
 
   // Clear any candidate easy move that wasn't stable for the last search
   // iterations; the second condition prevents consecutive fast moves.
-  if (EasyMove.stableCnt < 6 || mainThread->easyMovePlayed)
+  if (EasyMove.stableCnt < 6)
       EasyMove.clear();
 
   // If skill level is enabled, swap best PV line with the sub-optimal one
