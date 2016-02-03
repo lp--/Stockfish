@@ -548,10 +548,10 @@ void Thread::search() {
               // from the previous search and just did a fast verification.
               const bool F[] = { !mainThread->failedLow,
                                  bestValue >= mainThread->previousScore,
-                                 rootMoves[0].pv[0] == easyMove
-                                  && mainThread->bestMoveChanges < 0.03 };
+                                 rootMoves[0].pv[0] == easyMove,
+                                 mainThread->bestMoveChanges < 0.03 };
 
-              int improvingFactor = 640 - 160*F[0] - 126*F[1] - 124*F[0]*F[1] - 152*F[2];
+              int improvingFactor = 640 - 160*F[0] - 126*F[1] - 124*F[0]*F[1] - 76*F[2]*F[3] - 76*F[3];
               double unstablePvFactor = 1 + mainThread->bestMoveChanges;
 
               if (   rootMoves.size() == 1
