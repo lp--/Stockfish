@@ -338,6 +338,8 @@ const int halfDensityMap[][9] =
     {8, 1, 0, 0, 0, 0, 1, 1 ,1},
 };
 
+int _G[5] = {634, 160, 126, 124, 150};
+TUNE(_G);
 
 // Thread::search() is the main iterative deepening loop. It calls search()
 // repeatedly with increasing depth until the allocated thinking time has been
@@ -502,11 +504,11 @@ void Thread::search() {
                               bestValue >= mainThread->previousScore, 
                               mainThread->bestMoveChanges < 0.03 };
 
-           int improvingFactor = 640 - 160*F[0] - 126*F[1] - 124*F[0]*F[1] - 150*F[2];
+           int improvingFactor = 640 - _G[1]*F[0] - _G[2]*F[1] - _G[3]*F[0]*F[1] - _G[4]*F[2];
            double unstablePvFactor = 1 + mainThread->bestMoveChanges;
 	      
            if (   rootMoves.size() == 1
-               || Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 634)
+               || Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / _G[0])
            {
                // If we are allowed to ponder do not stop the search now but
                // keep pondering until the GUI sends "ponderhit" or "stop".
