@@ -559,7 +559,7 @@ void Thread::search() {
                      bestValue >= mainThread->previousScore,
                      toPiece != toPieceLast && toPiece != NO_PIECE && toPieceLast != NO_PIECE };
 
-              int improvingFactor = 640 - 160*F[0] - 126*F[1] - 124*F[0]*F[1] - 154*F[2];
+              int improvingFactor = 640 - 160*F[0] - 126*F[1] - 124*F[0]*F[1] - 191*F[2]*F[0];
               double unstablePvFactor = 1 + mainThread->bestMoveChanges;
 
               bool doEasyMove =   rootMoves[0].pv[0] == easyMove
@@ -567,7 +567,7 @@ void Thread::search() {
                                && Time.elapsed() > Time.optimum() * 25 / 204;
 
               if (   rootMoves.size() == 1
-                  || Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 625
+                  || Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 634
                   || (mainThread->easyMovePlayed = doEasyMove))
               {
                   mainThread->fastRecapture = F[0]*F[1]*F[2];
