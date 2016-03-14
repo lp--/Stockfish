@@ -370,6 +370,7 @@ void MainThread::search() {
   }
 
   previousScore = bestThread->rootMoves[0].score;
+  lastPos = rootPos, lastPos.do_move(bestThread->rootMoves[0].pv[0], si, false);
 
   // Send new PV when needed
   if (bestThread != this)
@@ -550,10 +551,15 @@ void Thread::search() {
               // Stop the search if only one legal move is available, or if all
               // of the available time has been used, or if we matched an easyMove
               // from the previous search and just did a fast verification.
-              const bool F[] = { !mainThread->failedLow,
-                                 bestValue >= mainThread->previousScore };
 
-              int improvingFactor = 640 - 160*F[0] - 126*F[1] - 124*F[0]*F[1];
+             Piece toPieceLast = mainThread->lastPos.piece_on(to_sq(rootMoves[0].pv[0]));
+             Piece toPiece = rootPos.piece_on(to_sq(rootMoves[0].pv[0]));
+
+             const bool F[] = { !mainThread->failedLow,
+                                 bestValue >= mainThread->previousScore,
+                                 toPiece != toPieceLast && toPiece != NO_PIECE && toPieceLast != NO_PIECE };
+
+              int improvingFactor = 640 - 160*F[0] - 126*F[1] - 124*F[0]*F[1] - 125*F[2];
               double unstablePvFactor = 1 + mainThread->bestMoveChanges;
 
               bool doEasyMove =   rootMoves[0].pv[0] == easyMove
@@ -561,7 +567,7 @@ void Thread::search() {
                                && Time.elapsed() > Time.optimum() * 25 / 204;
 
               if (   rootMoves.size() == 1
-                  || Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 634
+                  || Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 625
                   || (mainThread->easyMovePlayed = doEasyMove))
               {
                   // If we are allowed to ponder do not stop the search now but
