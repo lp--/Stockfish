@@ -103,19 +103,24 @@ void TimeManagement::init(Search::LimitsType& limits, Color us, int ply)
       limits.npmsec = npmsec;
   }
 
+  if (newGame)
+  {
+      beyondReset = (limits.movestogo ? limits.time[us] / ( limits.movestogo + ply/2) : 0);
+      newGame = false;        
+  }     
+
   startTime = limits.startTime;
   optimumTime = maximumTime = std::max(limits.time[us], minThinkingTime);
-
-  const int MaxMTG = limits.movestogo ? std::min(limits.movestogo, MoveHorizon) : MoveHorizon;
 
   // We calculate optimum time usage for different hypothetical "moves to go"-values
   // and choose the minimum of calculated search time values. Usually the greatest
   // hypMTG gives the minimum values.
-  for (int hypMTG = 1; hypMTG <= MaxMTG; ++hypMTG)
+  for (int hypMTG = 1; hypMTG <= MoveHorizon; ++hypMTG)
   {
       // Calculate thinking time for hypothetical "moves to go"-value
       int hypMyTime =  limits.time[us]
                      + limits.inc[us] * (hypMTG - 1)
+                     + std::max(0 , hypMTG - limits.movestogo) * beyondReset 
                      - moveOverhead * (2 + std::min(hypMTG, 40));
 
       hypMyTime = std::max(hypMyTime, 0);
