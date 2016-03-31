@@ -103,11 +103,15 @@ void TimeManagement::init(Search::LimitsType& limits, Color us, int ply)
       limits.npmsec = npmsec;
   }
 
-  if (newGame)
+
+  if(!limits.movestogo)    
+     beyondReset = 0;
+  else if(newGame)
   {
-      beyondReset = (limits.movestogo ? limits.time[us] / ( limits.movestogo + ply/2) : 0);
-      newGame = false;        
-  }     
+     beyondReset = limits.time[us] / ( limits.movestogo + ply/2);
+     newGame = false;        
+  } 
+    
 
   startTime = limits.startTime;
   optimumTime = maximumTime = std::max(limits.time[us], minThinkingTime);
