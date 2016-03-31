@@ -30,7 +30,7 @@
 
 class TimeManagement {
 public:
-  TimeManagement(): newGame(true), beyondReset(0) {}
+  TimeManagement(): newGame(true) {}
   void init(Search::LimitsType& limits, Color us, int ply);
   int optimum() const { return optimumTime; }
   int maximum() const { return maximumTime; }
