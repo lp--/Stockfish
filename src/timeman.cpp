@@ -104,10 +104,11 @@ void TimeManagement::init(Search::LimitsType& limits, Color us, int ply)
   }
 
   if(!limits.movestogo)    
-     beyondReset = 0;
+    timeChunk = 0, nMoves = 1;
   else if(newGame)
-     beyondReset = (limits.time[us] - (ply/2)*limits.inc[us]) / (limits.movestogo + ply/2);
-  
+    timeChunk = (limits.time[us] - (ply/2)*limits.inc[us]), 
+    nMoves = limits.movestogo + ply/2;
+ 
   newGame = false;
 
   startTime = limits.startTime;
@@ -121,7 +122,8 @@ void TimeManagement::init(Search::LimitsType& limits, Color us, int ply)
       // Calculate thinking time for hypothetical "moves to go"-value
       int hypMyTime =  limits.time[us]
                      + limits.inc[us] * (hypMTG - 1)
-                     + std::max(0 , hypMTG - limits.movestogo) * beyondReset 
+                     + ( hypMTG - limits.movestogo > 0 
+                        ? ((hypMTG - limits.movestogo - 1)/nMoves + 1) * timeChunk : 0 )
                      - moveOverhead * (2 + std::min(hypMTG, 40));
 
       hypMyTime = std::max(hypMyTime, 0);

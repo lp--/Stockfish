@@ -41,9 +41,7 @@ public:
 
 private:
   TimePoint startTime;
-  int optimumTime;
-  int maximumTime;
-  int beyondReset;
+  int optimumTime, maximumTime, timeChunk, nMoves;
 };
 
 extern TimeManagement Time;
