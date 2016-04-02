@@ -560,7 +560,8 @@ void Thread::search() {
 
               if (   rootMoves.size() == 1
                   || Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 634
-                  || (mainThread->easyMovePlayed = doEasyMove))
+                  || (mainThread->easyMovePlayed = doEasyMove)
+                  || Time.elapsed() > Time.maximum() / 2  )
               {
                   // If we are allowed to ponder do not stop the search now but
                   // keep pondering until the GUI sends "ponderhit" or "stop".
