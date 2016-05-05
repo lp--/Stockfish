@@ -216,6 +216,7 @@ void Search::clear() {
   }
 
   Threads.main()->previousScore = VALUE_INFINITE;
+  Threads.main()->contempt = 0;
 }
 
 
@@ -257,7 +258,8 @@ void MainThread::search() {
   Color us = rootPos.side_to_move();
   Time.init(Limits, us, rootPos.game_ply());
 
-  int contempt = Options["Contempt"] * PawnValueEg / 100; // From centipawns
+  contempt = ( Options["Contempt"] 
+                  + 12*( previousScore >= 0 || previousScore == -contempt) ) * PawnValueEg / 100; // From centipawns
   DrawValue[ us] = VALUE_DRAW - Value(contempt);
   DrawValue[~us] = VALUE_DRAW + Value(contempt);
 
