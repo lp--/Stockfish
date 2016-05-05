@@ -215,8 +215,7 @@ void Search::clear() {
       th->counterMoves.clear();
   }
 
-  Threads.main()->previousScore = VALUE_INFINITE;
-  Threads.main()->contempt = 0;
+  Threads.main()->previousScore = Threads.main()->trailingScore = VALUE_INFINITE;
 }
 
 
@@ -258,8 +257,8 @@ void MainThread::search() {
   Color us = rootPos.side_to_move();
   Time.init(Limits, us, rootPos.game_ply());
 
-  contempt = ( Options["Contempt"] 
-                  + 12*( previousScore >= 0 || previousScore == -contempt) ) * PawnValueEg / 100; // From centipawns
+  int contempt = ( Options["Contempt"] 
+                  + 12*(previousScore > trailingScore) ) * PawnValueEg / 100; // From centipawns
   DrawValue[ us] = VALUE_DRAW - Value(contempt);
   DrawValue[~us] = VALUE_DRAW + Value(contempt);
 
@@ -363,6 +362,7 @@ void MainThread::search() {
   }
 
   previousScore = bestThread->rootMoves[0].score;
+  trailingScore = trailingScore == VALUE_INFINITE ? previousScore : (trailingScore + previousScore)/2; 
 
   // Send new PV when needed
   if (bestThread != this)
