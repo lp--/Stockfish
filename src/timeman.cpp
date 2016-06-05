@@ -105,6 +105,10 @@ void TimeManagement::init(Search::LimitsType& limits, Color us, int ply)
 
   startTime = limits.startTime;
   optimumTime = maximumTime = std::max(limits.time[us], minThinkingTime);
+  leftTime = limits.time[us];
+
+  if(newGame)
+    fullTime = limits.time[us], newGame = false; 
 
   const int MaxMTG = limits.movestogo ? std::min(limits.movestogo, MoveHorizon) : MoveHorizon;
 

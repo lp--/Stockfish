@@ -171,6 +171,7 @@ namespace {
   void update_stats(const Position& pos, Stack* ss, Move move, Depth depth, Move* quiets, int quietsCnt);
   void check_time();
 
+  int manyPV;
 } // namespace
 
 
@@ -399,6 +400,7 @@ void Thread::search() {
       mainThread->easyMovePlayed = mainThread->failedLow = false;
       mainThread->bestMoveChanges = 0;
       TT.new_search();
+      manyPV = 0;
   }
 
   size_t multiPV = Options["MultiPV"];
@@ -433,7 +435,7 @@ void Thread::search() {
           rm.previousScore = rm.score;
 
       // MultiPV loop. We perform a full root search for each PV line
-      for (PVIdx = 0; PVIdx < multiPV && !Signals.stop; ++PVIdx)
+      for (PVIdx = 0; PVIdx < std::min(multiPV + (manyPV ? manyPV+1 : 0), rootMoves.size()) && !Signals.stop; ++PVIdx)
       {
           // Reset aspiration window starting size
           if (rootDepth >= 5 * ONE_PLY)
@@ -472,7 +474,7 @@ void Thread::search() {
               // When failing high/low give some update (without cluttering
               // the UI) before a re-search.
               if (   mainThread
-                  && multiPV == 1
+                  && PVIdx == 0
                   && (bestValue <= alpha || bestValue >= beta)
                   && Time.elapsed() > 3000)
                   sync_cout << UCI::pv(rootPos, rootDepth, alpha, beta) << sync_endl;
@@ -513,8 +515,14 @@ void Thread::search() {
               sync_cout << "info nodes " << Threads.nodes_searched()
                         << " time " << Time.elapsed() << sync_endl;
 
-          else if (PVIdx + 1 == multiPV || Time.elapsed() > 3000)
+          else if ((PVIdx + 1 == multiPV && manyPV == 0) || Time.elapsed() > 3000)
               sync_cout << UCI::pv(rootPos, rootDepth, alpha, beta) << sync_endl;
+
+          if (PVIdx >= multiPV && bestValue > VALUE_DRAW)
+	    break;
+
+	  if (mainThread && manyPV && bestValue == VALUE_DRAW) 
+               manyPV = std::min( manyPV + 1, 3);
       }
 
       if (!Signals.stop)
@@ -542,17 +550,26 @@ void Thread::search() {
               // of the available time has been used, or if we matched an easyMove
               // from the previous search and just did a fast verification.
               const int F[] = { mainThread->failedLow,
-                                bestValue - mainThread->previousScore };
+                                rootMoves[0].score - mainThread->previousScore };
 
               int improvingFactor = std::max(229, std::min(715, 357 + 119 * F[0] - 6 * F[1]));
               double unstablePvFactor = 1 + mainThread->bestMoveChanges;
 
               bool doEasyMove =   rootMoves[0].pv[0] == easyMove
                                && mainThread->bestMoveChanges < 0.03
-                               && Time.elapsed() > Time.optimum() * 5 / 42;
+                               && Time.elapsed() > Time.optimum() * 5 / 42
+                               && !(rootMoves[0].score == VALUE_DRAW 
+                                    && Time.left() > Time.full()/4);
+
+              //sync_cout << "xxx rootDepth " << rootDepth <<  " PVIdx " << PVIdx << " manyPV " <<  manyPV << sync_endl; 
+              manyPV = rootMoves[0].score == VALUE_DRAW && rootDepth > 7 && !manyPV && Time.left() > Time.full()/4;
+	      //if( rootDepth > 10 && Time.left() > Time.full()/4) manyPV = 0;
+	      //sync_cout << "xxx manyPV " <<  manyPV << " bv " << bestValue << " sc " << rootMoves[0].score  << sync_endl; 
+
+              int softStopTime = Time.optimum() * unstablePvFactor * improvingFactor / 628;
 
               if (   rootMoves.size() == 1
-                  || Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 628
+                  || Time.elapsed() > softStopTime
                   || (mainThread->easyMovePlayed = doEasyMove))
               {
                   // If we are allowed to ponder do not stop the search now but
@@ -1582,6 +1599,7 @@ string UCI::pv(const Position& pos, Depth depth, Value alpha, Value beta) {
          << " depth "    << d / ONE_PLY
          << " seldepth " << pos.this_thread()->maxPly
          << " multipv "  << i + 1
+         << " manypv " << manyPV
          << " score "    << UCI::value(v);
 
       if (!tb && i == PVIdx)

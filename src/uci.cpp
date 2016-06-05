@@ -187,6 +187,7 @@ void UCI::loop(int argc, char* argv[]) {
       {
           Search::clear();
           Time.availableNodes = 0;
+          Time.newGame = true;
       }
       else if (token == "isready")    sync_cout << "readyok" << sync_endl;
       else if (token == "go")         go(pos, is);
