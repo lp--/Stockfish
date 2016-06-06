@@ -412,7 +412,7 @@ void Thread::search() {
       multiPV = std::max(multiPV, (size_t)4);
 
   multiPV = std::min(multiPV, rootMoves.size());
-
+  Color us = rootPos.side_to_move();
   // Iterative deepening loop until requested to stop or the target depth is reached.
   while (++rootDepth < DEPTH_MAX && !Signals.stop && (!Limits.depth || Threads.main()->rootDepth <= Limits.depth))
   {
@@ -518,10 +518,10 @@ void Thread::search() {
           else if ((PVIdx + 1 == multiPV && manyPV == 0) || Time.elapsed() > 3000)
               sync_cout << UCI::pv(rootPos, rootDepth, alpha, beta) << sync_endl;
 
-          if (PVIdx >= multiPV && bestValue > VALUE_DRAW)
+          if (PVIdx >= multiPV && bestValue > DrawValue[us])
 	    break;
 
-	  if (mainThread && manyPV && bestValue == VALUE_DRAW) 
+	  if (mainThread && manyPV && bestValue == DrawValue[us]) 
                manyPV = std::min( manyPV + 1, 3);
       }
 
@@ -558,11 +558,11 @@ void Thread::search() {
               bool doEasyMove =   rootMoves[0].pv[0] == easyMove
                                && mainThread->bestMoveChanges < 0.03
                                && Time.elapsed() > Time.optimum() * 5 / 42
-                               && !(rootMoves[0].score == VALUE_DRAW 
+                               && !(rootMoves[0].score == DrawValue[us] 
                                     && Time.left() > Time.full()/4);
 
               //sync_cout << "xxx rootDepth " << rootDepth <<  " PVIdx " << PVIdx << " manyPV " <<  manyPV << sync_endl; 
-              manyPV = rootMoves[0].score == VALUE_DRAW && rootDepth > 7 && !manyPV && Time.left() > Time.full()/4;
+              manyPV = rootMoves[0].score == DrawValue[us]  && rootDepth > 7 && !manyPV && Time.left() > Time.full()/4;
 	      //if( rootDepth > 10 && Time.left() > Time.full()/4) manyPV = 0;
 	      //sync_cout << "xxx manyPV " <<  manyPV << " bv " << bestValue << " sc " << rootMoves[0].score  << sync_endl; 
 
