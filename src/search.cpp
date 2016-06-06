@@ -555,16 +555,14 @@ void Thread::search() {
               int improvingFactor = std::max(229, std::min(715, 357 + 119 * F[0] - 6 * F[1]));
               double unstablePvFactor = 1 + mainThread->bestMoveChanges;
 
+
+              bool doManyPV = rootMoves[0].score == DrawValue[us]  && rootDepth > 7 && rootMoves[0].pv.size() < 5;
+                               
               bool doEasyMove =   rootMoves[0].pv[0] == easyMove
                                && mainThread->bestMoveChanges < 0.03
-                               && Time.elapsed() > Time.optimum() * 5 / 42
-                               && !(rootMoves[0].score == DrawValue[us] 
-                                    && Time.left() > Time.full()/4);
+			       && Time.elapsed() > Time.optimum() * 5 / 42;
 
-              //sync_cout << "xxx rootDepth " << rootDepth <<  " PVIdx " << PVIdx << " manyPV " <<  manyPV << sync_endl; 
-              manyPV = rootMoves[0].score == DrawValue[us]  && rootDepth > 7 && !manyPV && Time.left() > Time.full()/4;
-	      //if( rootDepth > 10 && Time.left() > Time.full()/4) manyPV = 0;
-	      //sync_cout << "xxx manyPV " <<  manyPV << " bv " << bestValue << " sc " << rootMoves[0].score  << sync_endl; 
+              manyPV = doManyPV && !manyPV && Time.left() > Time.full()/20;
 
               int softStopTime = Time.optimum() * unstablePvFactor * improvingFactor / 628;
 
