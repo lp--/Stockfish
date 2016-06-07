@@ -551,6 +551,10 @@ void Thread::search() {
                                && mainThread->bestMoveChanges < 0.03
                                && Time.elapsed() > Time.optimum() * 5 / 42;
 
+              // increase time used while  making likely 3-fold repetition
+              if (rootMoves[0].score == DrawValue[rootPos.side_to_move()]  && rootDepth > 7 && rootMoves[0].pv.size() < 5)
+                  doEasyMove = false, improvingFactor = 715, unstablePvFactor = std::max(unstablePvFactor, 2.);
+
               if (   rootMoves.size() == 1
                   || Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 628
                   || (mainThread->easyMovePlayed = doEasyMove))
