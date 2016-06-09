@@ -78,7 +78,7 @@ public:
 struct MainThread : public Thread {
   virtual void search();
 
-  bool easyMovePlayed, failedLow;
+  bool easyMovePlayed;
   double bestMoveChanges;
   Value previousScore;
 };
