@@ -550,7 +550,7 @@ void Thread::search() {
 
               bool doEasyMove =   rootMoves[0].pv[0] == easyMove
                                && mainThread->bestMoveChanges < 0.03
-                               && Time.elapsed() > softStopTime / 7;
+                               && Time.elapsed() > softStopTime / 6 ;
 
               if (   rootMoves.size() == 1
                   || Time.elapsed() > softStopTime
