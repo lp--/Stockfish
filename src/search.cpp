@@ -399,6 +399,8 @@ void Thread::search() {
       mainThread->easyMovePlayed = mainThread->failedLow = false;
       mainThread->bestMoveChanges = 0;
       TT.new_search();
+      mainThread->repetitionCount = rootPos.repetition_count();
+      mainThread->keyToRepeat = rootPos.repetition_key();
   }
 
   size_t multiPV = Options["MultiPV"];
@@ -551,9 +553,20 @@ void Thread::search() {
                                && mainThread->bestMoveChanges < 0.03
                                && Time.elapsed() > Time.optimum() * 5 / 42;
 
-              // increase time used while  making likely 3-fold repetition
-              if (rootMoves[0].score == DrawValue[rootPos.side_to_move()]  && rootDepth > 7 && rootMoves[0].pv.size() < 5)
-                  doEasyMove = false, improvingFactor = 715, unstablePvFactor = std::max(unstablePvFactor, 2.);
+              // increase time used while making 3-fold repetition             
+              if ( mainThread->keyToRepeat == rootPos.key_after(rootMoves[0].pv[0]) )
+              {    
+                  doEasyMove = false;
+                  if ( mainThread->repetitionCount )
+                  {
+                      improvingFactor = 715; 
+                      unstablePvFactor = std::max(unstablePvFactor, 2. * mainThread->repetitionCount);
+	          }
+              }
+              //bool isRep = rootMoves[0].score == DrawValue[rootPos.side_to_move()]  && rootMoves[0].pv.size() < 5 ; //&& rootDepth > 7 ;
+              //bool isRep2 = mainThread->keyToRepeat == rootPos.key_after(rootMoves[0].pv[0]);
+	      //sync_cout << " isRep " <<  isRep << " isRep2 " <<  isRep2  << " is_draw " << rootPos.is_draw() 
+              //          << " rep_count " << rootPos.repetition_count() << sync_endl;
 
               if (   rootMoves.size() == 1
                   || Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 628

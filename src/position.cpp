@@ -1053,6 +1053,45 @@ bool Position::is_draw() const {
 }
 
 
+/// Position::repetition_count() counts number of previous repetitions
+
+int Position::repetition_count() const {
+
+  int count_us = 0, count_them = 0;
+  StateInfo *stp = st, *stpp = st; 
+
+  for (int i = 6, e = std::min(10, st->pliesFromNull); i <= e; i += 4)
+  {
+     if(i == 6) 
+       stp = stp->previous->previous;
+
+       stpp = stp->previous->previous->previous->previous; 
+
+       //printf("i = %d plies_st = %d plies_st_p = %d plies_st_pp = %d\n", i, 
+       //	    st->pliesFromNull, stp->pliesFromNull, stpp->pliesFromNull);
+ 
+      if(stp->key == stpp->key)
+	count_them++;
+      
+       
+      if(  stpp->pliesFromNull > 0 && stp->previous->key == stpp->previous->key ) 
+	count_us++; 
+
+      stp = stpp;
+  }
+  //printf("count_us %d count_them %d\n", count_us, count_them);  
+  return std::max(count_us, count_them);     
+}
+
+
+// Position::repetition_key returns key after our second previous move to compare 
+// if position is repeated after next move.
+
+Key Position::repetition_key() const {
+  return st->pliesFromNull > 3 ? st->previous->previous->previous->key : 0;
+}
+    
+
 /// Position::flip() flips position with the white and black sides reversed. This
 /// is only useful for debugging e.g. for finding evaluation symmetry bugs.
 

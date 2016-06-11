@@ -81,6 +81,8 @@ struct MainThread : public Thread {
   bool easyMovePlayed, failedLow;
   double bestMoveChanges;
   Value previousScore;
+  int repetitionCount; // How many times root position has been repeated                        
+  Key keyToRepeat; 
 };
 
 
