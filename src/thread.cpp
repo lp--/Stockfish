@@ -153,6 +153,8 @@ void ThreadPool::read_uci_options() {
 
   while (size() > requested)
       delete back(), pop_back();
+
+  time_factor = pow( 1.5 ,  (requested-1.)/requested); 
 }
 
 
