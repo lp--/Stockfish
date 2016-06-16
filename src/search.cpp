@@ -334,6 +334,10 @@ void MainThread::search() {
 }
 
 
+int _T = 131;
+TUNE(_T);
+
+
 // Thread::search() is the main iterative deepening loop. It calls search()
 // repeatedly with increasing depth until the allocated thinking time has been
 // consumed, the user stops the search, or the maximum search depth is reached.
@@ -350,7 +354,7 @@ void Thread::search() {
   bestValue = delta = alpha = -VALUE_INFINITE;
   beta = VALUE_INFINITE;
   completedDepth = DEPTH_ZERO;
-  bestMoveChanges = failedLow = 0;  
+  bestMoveChanges = failedLow = 0;
 
   if (mainThread)
   {
@@ -504,7 +508,7 @@ void Thread::search() {
 
               if (   rootMoves.size() == 1
                   || Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor 
-                                        * Threads.time_factor / 628
+		                    * (_T /100.) / 628
 		  || (mainThread && (Threads.easyMovePlayed = doEasyMove)))
               {
 		  Threads.stop_thread = this; 
