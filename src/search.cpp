@@ -505,7 +505,7 @@ void Thread::search() {
               if (   rootMoves.size() == 1
                   || Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor 
                                         * Threads.time_factor / 628
-		  || (mainThread && (Threads.easyMovePlayed = doEasyMove)))
+                  || (mainThread && (Threads.easyMovePlayed = doEasyMove)))
               {
 		  Threads.stop_thread = this; 
 
@@ -518,8 +518,8 @@ void Thread::search() {
               }
           }
 
-          if(!mainThread)
-	    continue;
+          if (!mainThread)
+              continue;
 
           if (rootMoves[0].pv.size() >= 3)
               EasyMove.update(rootPos, rootMoves[0].pv);
