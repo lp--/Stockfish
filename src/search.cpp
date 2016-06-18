@@ -504,7 +504,7 @@ void Thread::search() {
 
               if (   rootMoves.size() == 1
                   || Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor 
-                                        * Threads.time_factor / 628
+                                        * Threads.time_factor[idx] / 628
                   || (mainThread && (Threads.easyMovePlayed = doEasyMove)))
               {
 		  Threads.stop_thread = this; 
