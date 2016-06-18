@@ -95,7 +95,7 @@ struct ThreadPool : public std::vector<Thread*> {
   int64_t nodes_searched();
   Thread* stop_thread;
   Value previous_score;
-  double time_factor;
+  std::vector<double> time_factor;
   bool easyMovePlayed;
 
 private:
