@@ -699,7 +699,13 @@ namespace {
 
     return make_score(0, value);
   }
-
+   
+  int a = 31;
+  int b = 9;
+  int c = 46;
+  int d = 51;
+  int e = 37;
+  TUNE(a, b, c, d, e);
 
   // evaluate_scale_factor() computes the scale factor for the winning side
   ScaleFactor evaluate_scale_factor(const Position& pos, const EvalInfo& ei, Value eg) {
@@ -718,19 +724,19 @@ namespace {
             // is almost a draw, in case of KBP vs KB, it is even more a draw.
             if (   pos.non_pawn_material(WHITE) == BishopValueMg
                 && pos.non_pawn_material(BLACK) == BishopValueMg)
-                sf = more_than_one(pos.pieces(PAWN)) ? ScaleFactor(31) : ScaleFactor(9);
+                sf = more_than_one(pos.pieces(PAWN)) ? ScaleFactor(a) : ScaleFactor(b);
 
             // Endgame with opposite-colored bishops, but also other pieces. Still
             // a bit drawish, but not as drawish as with only the two bishops.
             else
-                sf = ScaleFactor(46);
+                sf = ScaleFactor(c);
         }
         // Endings where weaker side can place his king in front of the opponent's
         // pawns are drawish.
         else if (    abs(eg) <= BishopValueEg
                  &&  ei.pi->pawn_span(strongSide) <= 1
                  && !pos.pawn_passed(~strongSide, pos.square<KING>(~strongSide)))
-            sf = ei.pi->pawn_span(strongSide) ? ScaleFactor(51) : ScaleFactor(37);
+            sf = ei.pi->pawn_span(strongSide) ? ScaleFactor(d) : ScaleFactor(e);
     }
 
     return sf;
