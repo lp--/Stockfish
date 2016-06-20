@@ -436,7 +436,7 @@ void Thread::search() {
 
                   if (mainThread)
                   {
-                      mainThread->failedLow = mainThread->failedLowEver = true;
+                      mainThread->failedLow = true;
                       Signals.stopOnPonderhit = false;
                   }
               }
@@ -491,11 +491,11 @@ void Thread::search() {
               // Stop the search if only one legal move is available, or if all
               // of the available time has been used, or if we matched an easyMove
               // from the previous search and just did a fast verification.
-              const int F[] = { mainThread->failedLowEver,
-                                mainThread->failedLow,
-                                bestValue - mainThread->previousScore };
+              const int F[] = { !(mainThread->failedLowEver += mainThread->failedLow),
+                                 mainThread->failedLow,
+                                 bestValue - mainThread->previousScore };
 
-              int improvingFactor = std::max(229, std::min(715, 119 * (2 + F[1] + F[0]) - 6 * F[2]));
+              int improvingFactor = std::max(229, std::min(715, 357 + 119 * F[1] - 64 * F[0] - 6 * F[2]));
               double unstablePvFactor = 1 + mainThread->bestMoveChanges;
 
               bool doEasyMove =   rootMoves[0].pv[0] == easyMove
