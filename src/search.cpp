@@ -351,7 +351,7 @@ void Thread::search() {
   {
       easyMove = EasyMove.get(rootPos.key());
       EasyMove.clear();
-      mainThread->easyMovePlayed = mainThread->failedLow = false;
+      mainThread->easyMovePlayed = mainThread->failedLow = mainThread->failedLowEver = false;
       mainThread->bestMoveChanges = 0;
       TT.new_search();
   }
@@ -436,7 +436,7 @@ void Thread::search() {
 
                   if (mainThread)
                   {
-                      mainThread->failedLow = true;
+                      mainThread->failedLow = mainThread->failedLowEver = true;
                       Signals.stopOnPonderhit = false;
                   }
               }
@@ -491,10 +491,11 @@ void Thread::search() {
               // Stop the search if only one legal move is available, or if all
               // of the available time has been used, or if we matched an easyMove
               // from the previous search and just did a fast verification.
-              const int F[] = { mainThread->failedLow,
+              const int F[] = { mainThread->failedLowEver,
+                                mainThread->failedLow,
                                 bestValue - mainThread->previousScore };
 
-              int improvingFactor = std::max(229, std::min(715, 357 + 119 * F[0] - 6 * F[1]));
+              int improvingFactor = std::max(229, std::min(715, 119 * (2 + F[1] + F[0]) - 6 * F[2]));
               double unstablePvFactor = 1 + mainThread->bestMoveChanges;
 
               bool doEasyMove =   rootMoves[0].pv[0] == easyMove
@@ -502,7 +503,7 @@ void Thread::search() {
                                && Time.elapsed() > Time.optimum() * 5 / 42;
 
               if (   rootMoves.size() == 1
-                  || Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 628
+                  || Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 616
                   || (mainThread->easyMovePlayed = doEasyMove))
               {
                   // If we are allowed to ponder do not stop the search now but
