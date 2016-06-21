@@ -248,6 +248,9 @@ uint64_t Search::perft(Position& pos, Depth depth) {
 
 template uint64_t Search::perft<true>(Position&, Depth);
 
+int _MIN=229, _MAX=715, _X0=357, _X1=119, _X2 = 64, _X3=60, _EM=210;
+TUNE(_MIN, _MAX, _X0, _X1, _X2, _X3, _EM);
+
 
 /// MainThread::search() is called by the main thread when the program receives
 /// the UCI 'go' command. It searches from the root position and outputs the "bestmove".
@@ -495,15 +498,15 @@ void Thread::search() {
                                  mainThread->failedLow,
                                  bestValue - mainThread->previousScore };
 
-              int improvingFactor = std::max(229, std::min(715, 357 + 119 * F[1] - 64 * F[0] - 6 * F[2]));
+              int improvingFactor = std::max(_MIN, std::min(_MAX, _X0 + _X1 * F[1] - _X2 * F[0] - _X3 * F[2] / 10 ));
               double unstablePvFactor = 1 + mainThread->bestMoveChanges;
 
               bool doEasyMove =   rootMoves[0].pv[0] == easyMove
                                && mainThread->bestMoveChanges < 0.03
-                               && Time.elapsed() > Time.optimum() * 5 / 42;
+                               && Time.elapsed() > Time.optimum() * 25 / _EM;
 
               if (   rootMoves.size() == 1
-                  || Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 616
+                  || Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 628
                   || (mainThread->easyMovePlayed = doEasyMove))
               {
                   // If we are allowed to ponder do not stop the search now but
