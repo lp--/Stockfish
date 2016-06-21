@@ -252,6 +252,9 @@ uint64_t Search::perft(Position& pos, Depth depth) {
 template uint64_t Search::perft<true>(Position&, Depth);
 
 
+int _X[] = {113, 131, 131};
+TUNE(_X);
+
 /// MainThread::search() is called by the main thread when the program receives
 /// the UCI 'go' command. It searches from the root position and outputs the "bestmove".
 
@@ -504,7 +507,7 @@ void Thread::search() {
 
               if (   rootMoves.size() == 1
                   || Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor 
-                                        * Threads.time_factor[idx] / 628
+                                        * _X[idx]/100. / 628
                   || (mainThread && (Threads.easyMovePlayed = doEasyMove)))
               {
 		  Threads.stop_thread = this; 
