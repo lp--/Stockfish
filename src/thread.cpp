@@ -160,13 +160,13 @@ void ThreadPool::read_uci_options() {
   const Row factors[] = {
     {1},
     {1.03, 1.2},
-    {1.13, 1.31, 1.31} 
+    {1.16, 1.30, 1.35} 
   };
   const size_t factorsSize = std::extent<decltype(factors)>::value;
 
   const Row& row = factors[std::min(requested,factorsSize) - 1];
   for(size_t i=0; i<requested; i++)
-    time_factor[i] = row[i % factorsSize] + (i >= factorsSize) * 10;
+    time_factor[i] = i < factorsSize ? row[i % factorsSize] : 100;
 
 }
 
