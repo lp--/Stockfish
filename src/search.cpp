@@ -422,11 +422,11 @@ void Thread::search() {
 
               // When failing high/low give some update (without cluttering
               // the UI) before a re-search.
-              if (   mainThread
+              if (   ( mainThread || Options["Thread Analysis"] )
                   && multiPV == 1
                   && (bestValue <= alpha || bestValue >= beta)
                   && Time.elapsed() > 3000)
-                  sync_cout << UCI::pv(rootPos, rootDepth, alpha, beta) << sync_endl;
+                  sync_cout << UCI::pv(rootPos, rootDepth, alpha, beta, idx) << sync_endl;
 
               // In case of failing low/high increase aspiration window and
               // re-search, otherwise exit the loop.
@@ -457,7 +457,6 @@ void Thread::search() {
           // Sort the PV lines searched so far and update the GUI
           std::stable_sort(rootMoves.begin(), rootMoves.begin() + PVIdx + 1);
 
-       
           if (Signals.stop && mainThread)
               sync_cout << "info nodes " << Threads.nodes_searched()
                         << " time " << Time.elapsed() << sync_endl;
