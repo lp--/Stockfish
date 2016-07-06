@@ -370,9 +370,14 @@ void Thread::search() {
   // Iterative deepening loop until requested to stop or the target depth is reached.
   while (++rootDepth < DEPTH_MAX && !Signals.stop && (!Limits.depth || Threads.main()->rootDepth <= Limits.depth))
   {
+
+       bool dedicatedThread = false;
+       if(!mainThread && idx + 1 == Threads.size() && rootDepth > 5 && rootMoves.size() > 1)
+	 dedicatedThread = true, ss->excludedMove = Threads.main()->currentMove;        
+
       // Set up the new depths for the helper threads skipping on average every
       // 2nd ply (using a half-density matrix).
-      if (!mainThread)
+      if (!mainThread && !dedicatedThread)
       {
           const Row& row = HalfDensity[(idx - 1) % HalfDensitySize];
           if (row[(rootDepth + rootPos.game_ply()) % row.size()])
@@ -474,6 +479,8 @@ void Thread::search() {
 
       if (!mainThread)
           continue;
+      else
+          mainThread->currentMove=rootMoves[0].pv[0];
 
       // If skill level is enabled and time is up, pick a sub-optimal best move
       if (skill.enabled() && skill.time_to_pick(rootDepth))
