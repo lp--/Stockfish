@@ -346,6 +346,7 @@ void Thread::search() {
   bestValue = delta = alpha = -VALUE_INFINITE;
   beta = VALUE_INFINITE;
   completedDepth = DEPTH_ZERO;
+  dedicatedThread = false;
 
   if (mainThread)
   {
@@ -370,10 +371,9 @@ void Thread::search() {
   // Iterative deepening loop until requested to stop or the target depth is reached.
   while (++rootDepth < DEPTH_MAX && !Signals.stop && (!Limits.depth || Threads.main()->rootDepth <= Limits.depth))
   {
-
-       bool dedicatedThread = false;
-       if(!mainThread && idx + 1 == Threads.size() && rootDepth > 5 && rootMoves.size() > 1)
-	 dedicatedThread = true, ss->excludedMove = Threads.main()->currentMove;        
+      if( !mainThread && idx + 1 == Threads.size() && rootMoves.size()>1 )
+	dedicatedThread = true, ss->excludedMove = Threads.main()->currentMove;  
+      
 
       // Set up the new depths for the helper threads skipping on average every
       // 2nd ply (using a half-density matrix).
@@ -730,6 +730,7 @@ namespace {
 
     // Step 7. Futility pruning: child node (skipped when in check)
     if (   !rootNode
+	&& !(thisThread->dedicatedThread && PvNode)
         &&  depth < 7 * ONE_PLY
         &&  eval - futility_margin(depth) >= beta
         &&  eval < VALUE_KNOWN_WIN  // Do not return unproven wins
@@ -880,7 +881,7 @@ moves_loop: // When in check search starts from here
                   : pos.gives_check(move, ci);
 
       moveCountPruning =   depth < 16 * ONE_PLY
-                        && moveCount >= FutilityMoveCounts[improving][depth];
+                        && moveCount >= FutilityMoveCounts[improving][depth] + 2 * thisThread->dedicatedThread;
 
       // Step 12. Extend checks
       if (    givesCheck
@@ -914,6 +915,7 @@ moves_loop: // When in check search starts from here
 
       // Step 13. Pruning at shallow depth
       if (   !rootNode
+          && !(thisThread->dedicatedThread && PvNode)
           && !captureOrPromotion
           && !inCheck
           && !givesCheck
@@ -964,7 +966,9 @@ moves_loop: // When in check search starts from here
       // re-searched at full depth.
       if (    depth >= 3 * ONE_PLY
           &&  moveCount > 1
-          && !captureOrPromotion)
+	  && !captureOrPromotion
+	  && ( !thisThread->dedicatedThread  || 
+               ( !(depth >= 16 * ONE_PLY && ss->ply <= 3 * ONE_PLY) &&  thisThread->maxPly > depth )))   
       {
           Depth r = reduction<PvNode>(improving, depth, moveCount);
           Value val = thisThread->history[moved_piece][to_sq(move)]

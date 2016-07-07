@@ -69,6 +69,7 @@ public:
   HistoryStats history;
   MoveStats counterMoves;
   Depth completedDepth;
+  bool dedicatedThread;
   std::atomic_bool resetCalls;
 };
 
