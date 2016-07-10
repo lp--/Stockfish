@@ -191,9 +191,6 @@ namespace {
   void update_stats(const Position& pos, Stack* ss, Move move, Depth depth, Move* quiets, int quietsCnt);
   void check_time();
 
-  bool failedLow;
-  double bestMoveChanges;
-
 } // namespace
 
 
@@ -363,6 +360,7 @@ void Thread::search() {
   Stack stack[MAX_PLY+7], *ss = stack+5; // To allow referencing (ss-5) and (ss+2)
   Value bestValue, alpha, beta, delta;
   Move easyMove = MOVE_NONE;
+  int noSkipDepth = 0;
   MainThread* mainThread = (this == Threads.main() ? Threads.main() : nullptr);
 
   std::memset(ss-5, 0, 8 * sizeof(Stack));
@@ -371,7 +369,7 @@ void Thread::search() {
   beta = VALUE_INFINITE;
   completedDepth = DEPTH_ZERO;
   bestMoveChanges = failedLow = 0;  
-
+  
   if (mainThread)
   {
       easyMove = EasyMove.get(rootPos.key());
@@ -393,13 +391,18 @@ void Thread::search() {
   // Iterative deepening loop until requested to stop or the target depth is reached.
   while (++rootDepth < DEPTH_MAX && !Signals.stop && (!Limits.depth || Threads.main()->rootDepth <= Limits.depth))
   {
+      noSkipDepth++;
+
       // Set up the new depths for the helper threads skipping on average every
       // 2nd ply (using a half-density matrix).
       if (!mainThread)
       {
           const Row& row = HalfDensity[(idx - 1) % HalfDensitySize];
           if (row[(rootDepth + rootPos.game_ply()) % row.size()])
-             continue;
+          {
+              noSkipDepth = 0;
+              continue;
+          }
       }
 
       // Age out PV variability metric
@@ -523,8 +526,8 @@ void Thread::search() {
                                && Time.elapsed() > Time.optimum() * 5 / 42;
 
               if (   rootMoves.size() == 1
-                  || Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor 
-                                        * Threads.time_factor[idx] / 628
+                  || (Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor 
+                                           * Threads.time_factor / 628  &&  noSkipDepth > 1)
                   || (mainThread && (Threads.easyMovePlayed = doEasyMove)))
               {
 		  Threads.stop_thread = this; 
@@ -1069,7 +1072,7 @@ moves_loop: // When in check search starts from here
               // iteration. This information is used for time management: When
               // the best move changes frequently, we allocate some more time.
               if (moveCount > 1 && thisThread == Threads.main())
-                  ++bestMoveChanges;
+                  ++thisThread->bestMoveChanges;
           }
           else
               // All other moves but the PV are set to the lowest value: this is

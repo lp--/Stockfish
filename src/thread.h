@@ -65,10 +65,11 @@ public:
 
   Position rootPos;
   Search::RootMoves rootMoves;
-  Depth rootDepth;
+  Depth rootDepth, completedDepth;
   HistoryStats history;
   MoveStats counterMoves;
-  Depth completedDepth;
+  bool failedLow;
+  double bestMoveChanges;
   std::atomic_bool resetCalls;
 };
 
@@ -95,7 +96,7 @@ struct ThreadPool : public std::vector<Thread*> {
   int64_t nodes_searched();
   Thread* stop_thread;
   Value previous_score;
-  std::vector<double> time_factor;
+  double time_factor;
   bool easyMovePlayed;
 
 private:
