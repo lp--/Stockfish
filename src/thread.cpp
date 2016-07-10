@@ -159,7 +159,7 @@ void ThreadPool::read_uci_options() {
   typedef std::vector<double> Row;
   const Row factors[] = {
     {1},
-    {1, 100},
+    {1.03, 1.2},
     {1.17, 1.30, 1.35} 
   };
   const size_t factorsSize = std::extent<decltype(factors)>::value;
