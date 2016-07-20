@@ -216,6 +216,7 @@ void Search::clear() {
   }
 
   Threads.main()->previousScore = VALUE_INFINITE;
+  Threads.main()->previousDepth = DEPTH_MAX;
 }
 
 
@@ -315,7 +316,11 @@ void MainThread::search() {
               bestThread = th;
   }
 
-  previousScore = bestThread->rootMoves[0].score;
+  if(!this->easyMovePlayed)
+  {
+      previousScore = bestThread->rootMoves[0].score;
+      previousDepth = bestThread->rootDepth;
+  }
 
   // Send new PV when needed
   if (bestThread != this)
@@ -492,17 +497,18 @@ void Thread::search() {
               // of the available time has been used, or if we matched an easyMove
               // from the previous search and just did a fast verification.
               const int F[] = { mainThread->failedLow,
-                                bestValue - mainThread->previousScore };
+                                bestValue - mainThread->previousScore,
+                                mainThread->previousDepth < rootDepth - ONE_PLY };
 
-              int improvingFactor = std::max(229, std::min(715, 357 + 119 * F[0] - 6 * F[1]));
+              int improvingFactor = std::max(229, std::min(715, 357 + 119 * (F[0] - F[2]) - 6 * F[1]));
               double unstablePvFactor = 1 + mainThread->bestMoveChanges;
 
               bool doEasyMove =   rootMoves[0].pv[0] == easyMove
                                && mainThread->bestMoveChanges < 0.03
-                               && Time.elapsed() > Time.optimum() * 5 / 42;
+                               && Time.elapsed() > Time.optimum() / 8;
 
               if (   rootMoves.size() == 1
-                  || Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 628
+                  || Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 598
                   || (mainThread->easyMovePlayed = doEasyMove))
               {
                   // If we are allowed to ponder do not stop the search now but
