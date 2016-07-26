@@ -440,6 +440,11 @@ void Thread::search() {
                       Signals.stopOnPonderhit = false;
                   }
               }
+              else if ((!mainThread || multiPV != 1) && bestValue >= beta)
+              {
+                  alpha = (alpha + beta) / 2;
+                  beta = std::min(bestValue + delta, VALUE_INFINITE);
+              }
               else
                   break;
 
