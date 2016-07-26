@@ -441,14 +441,6 @@ void Thread::search() {
                       Signals.stopOnPonderhit = false;
                   }
               }
-              else if (bestValue >= beta)
-              {
-		  if(!mainThread->failedLow)
-		     break;
-
-                  alpha = (alpha + beta) / 2;
-                  beta = std::min(bestValue + delta, VALUE_INFINITE);
-              }
               else
                   break;
 
@@ -506,7 +498,7 @@ void Thread::search() {
                                && Time.elapsed() > Time.optimum() * 5 / 42;
 
               if (   rootMoves.size() == 1
-                  || Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 628
+                  || Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 598
                   || (mainThread->easyMovePlayed = doEasyMove))
               {
                   // If we are allowed to ponder do not stop the search now but
