@@ -80,7 +80,6 @@ struct MainThread : public Thread {
 
   bool easyMovePlayed, failedLow;
   double bestMoveChanges;
-  Value previousScore;
 };
 
 
@@ -97,6 +96,7 @@ struct ThreadPool : public std::vector<Thread*> {
   void start_thinking(Position&, StateListPtr&, const Search::LimitsType&);
   void read_uci_options();
   int64_t nodes_searched();
+  Value previousScore;
 
 private:
   StateListPtr setupStates;

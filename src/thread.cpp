@@ -124,6 +124,7 @@ void ThreadPool::init() {
 
   push_back(new MainThread);
   read_uci_options();
+  previousScore = VALUE_INFINITE;
 }
 
 
