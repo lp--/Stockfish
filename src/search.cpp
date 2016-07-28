@@ -440,6 +440,15 @@ void Thread::search() {
                       Signals.stopOnPonderhit = false;
                   }
               }
+              else if (   !mainThread 
+                       && bestValue >= beta
+                       && !Threads.main()->rootMoves.empty() 
+                       && !Threads.main()->rootMoves[0].pv.empty() 
+                       && rootMoves[0].pv[0] != Threads.main()->rootMoves[0].pv[0])
+              {
+                  alpha = (alpha + beta) / 2;
+                  beta = std::min(bestValue + delta, VALUE_INFINITE);
+              }
               else
                   break;
 
