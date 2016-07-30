@@ -441,10 +441,9 @@ void Thread::search() {
                   }
               }
               else if (   !mainThread 
-                       && bestValue >= beta
-                       && !Threads.main()->rootMoves.empty() 
-                       && !Threads.main()->rootMoves[0].pv.empty() 
-                       && rootMoves[0].pv[0] != Threads.main()->rootMoves[0].pv[0])
+                       && bestValue >= beta 
+                       && rootMoves[0].pv[0] != Threads.main()->completedBestMove
+                       && rootDepth > Threads.main()->completedDepth)
               {
                   alpha = (alpha + beta) / 2;
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
@@ -474,7 +473,9 @@ void Thread::search() {
       if (!Signals.stop)
           completedDepth = rootDepth;
 
-      if (!mainThread)
+      if (mainThread)
+          mainThread->completedBestMove = rootMoves[0].pv[0];
+      else
           continue;
 
       // If skill level is enabled and time is up, pick a sub-optimal best move
