@@ -354,6 +354,7 @@ void Thread::search() {
       EasyMove.clear();
       mainThread->easyMovePlayed = mainThread->failedLow = false;
       mainThread->bestMoveChanges = 0;
+      mainThread->completedBestMove = MOVE_NONE;
       TT.new_search();
   }
 
@@ -444,7 +445,7 @@ void Thread::search() {
               else if (   !mainThread 
                        && bestValue >= beta 
                        && rootMoves[0].pv[0] != Threads.main()->completedBestMove
-                       && rootDepth > Threads.main()->completedDepth)
+                       && rootDepth == Threads.main()->completedDepth )
               {
                   alpha = (alpha + beta) / 2;
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
