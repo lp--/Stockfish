@@ -353,6 +353,9 @@ void Thread::search() {
       EasyMove.clear();
       mainThread->easyMovePlayed = mainThread->failedLow = false;
       mainThread->bestMoveChanges = 0;
+      mainThread->currentBestMove = MOVE_NONE;
+      mainThread->currentBestDepth = DEPTH_ZERO;
+      mainThread->currentBestScore = -VALUE_INFINITE;
       TT.new_search();
   }
 
@@ -440,11 +443,10 @@ void Thread::search() {
                       Signals.stopOnPonderhit = false;
                   }
               }
-              else if (   !mainThread 
-                       && bestValue >= beta 
-                       && rootMoves[0].pv[0] != Threads.main()->completedBestMove
-                       && rootDepth > Threads.main()->completedDepth)
-              {
+              else if ( bestValue >= beta
+		       && rootDepth == Threads.main()->currentBestDepth
+		       && rootMoves[0].pv[0] != Threads.main()->currentBestMove)
+              {   
                   alpha = (alpha + beta) / 2;
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
               }
@@ -468,14 +470,26 @@ void Thread::search() {
 
           else if (PVIdx + 1 == multiPV || Time.elapsed() > 3000)
               sync_cout << UCI::pv(rootPos, rootDepth, alpha, beta) << sync_endl;
+
+
+          if (   rootDepth >= Threads.main()->currentBestDepth
+	      && ( rootMoves[0].pv[0] == Threads.main()->currentBestMove
+		|| rootMoves[0].score > Threads.main()->currentBestScore
+                || mainThread ))
+          {
+	      Threads.main()->currentBestDepth =  rootDepth;
+	      Threads.main()->currentBestMove = rootMoves[0].pv[0];
+	      Threads.main()->currentBestScore = rootMoves[0].score;
+          }
+
+          if (!mainThread)
+              continue;
       }
 
       if (!Signals.stop)
           completedDepth = rootDepth;
 
-      if (mainThread)
-          mainThread->completedBestMove = rootMoves[0].pv[0];
-      else
+      if (!mainThread)
           continue;
 
       // If skill level is enabled and time is up, pick a sub-optimal best move
