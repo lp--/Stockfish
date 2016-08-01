@@ -471,19 +471,15 @@ void Thread::search() {
           else if (PVIdx + 1 == multiPV || Time.elapsed() > 3000)
               sync_cout << UCI::pv(rootPos, rootDepth, alpha, beta) << sync_endl;
 
-
           if (   rootDepth >= Threads.main()->currentBestDepth
-	      && ( rootMoves[0].pv[0] == Threads.main()->currentBestMove
-		|| rootMoves[0].score > Threads.main()->currentBestScore
+              && ( rootMoves[0].pv[0] == Threads.main()->currentBestMove
+                || rootMoves[0].score > Threads.main()->currentBestScore
                 || mainThread ))
           {
-	      Threads.main()->currentBestDepth =  rootDepth;
-	      Threads.main()->currentBestMove = rootMoves[0].pv[0];
-	      Threads.main()->currentBestScore = rootMoves[0].score;
+              Threads.main()->currentBestDepth =  rootDepth;
+              Threads.main()->currentBestMove = rootMoves[0].pv[0];
+              Threads.main()->currentBestScore = rootMoves[0].score;
           }
-
-          if (!mainThread)
-              continue;
       }
 
       if (!Signals.stop)
