@@ -444,7 +444,7 @@ void Thread::search() {
               else if (   !mainThread 
                        && bestValue >= beta 
                        && rootMoves[0].pv[0] != Threads.main()->completedBestMove
-                       && rootDepth == Threads.main()->completedDepth )
+                       && rootDepth <= Threads.main()->completedDepth )
               {
                   alpha = (alpha + beta) / 2;
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
