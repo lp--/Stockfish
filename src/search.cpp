@@ -442,6 +442,7 @@ void Thread::search() {
                   }
               }
               else if (   !mainThread 
+                       && idx < 3
                        && bestValue >= beta 
                        && rootMoves[0].pv[0] != Threads.main()->completedBestMove
                        && rootDepth <= Threads.main()->completedDepth )
