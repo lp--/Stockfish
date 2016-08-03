@@ -98,7 +98,7 @@ void benchmark(const Position& current, istream& is) {
   // Assign default values to missing arguments
   string ttSize    = (is >> token) ? token : "16";
   string threads   = (is >> token) ? token : "1";
-  string limit     = (is >> token) ? token : "14";
+  string limit     = (is >> token) ? token : "13";
   string fenFile   = (is >> token) ? token : "default";
   string limitType = (is >> token) ? token : "depth";
 
