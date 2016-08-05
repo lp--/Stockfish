@@ -354,12 +354,12 @@ void Thread::search() {
       EasyMove.clear();
       mainThread->easyMovePlayed = mainThread->failedLow = false;
       mainThread->bestMoveChanges = 0;
-      mainThread->completedBestMove = MOVE_NONE;
       TT.new_search();
   }
 
   size_t multiPV = Options["MultiPV"];
   Skill skill(Options["Skill Level"]);
+  bool resolveRootFails = (multiPV != 1);
 
   // When playing with strength handicap enable MultiPV search that we will
   // use behind the scenes to retrieve a set of possible moves.
@@ -431,21 +431,19 @@ void Thread::search() {
 
               // In case of failing low/high increase aspiration window and
               // re-search, otherwise exit the loop.
-              if (bestValue <= alpha)
+              if (  bestValue <= alpha
+		    && (   mainThread
+			|| resolveRootFails))
               {
-                  beta = (alpha + beta) / 2;
-                  alpha = std::max(bestValue - delta, -VALUE_INFINITE);
-
                   if (mainThread)
                   {
                       mainThread->failedLow = true;
                       Signals.stopOnPonderhit = false;
                   }
+                  beta = (alpha + beta) / 2;
+                  alpha = std::max(bestValue - delta, -VALUE_INFINITE);
               }
-              else if (   !mainThread 
-                       && bestValue >= beta 
-                       && rootMoves[0].pv[0] != Threads.main()->completedBestMove
-                       && rootDepth == Threads.main()->completedDepth )
+              else if (resolveRootFails && bestValue >= beta)
               {
                   alpha = (alpha + beta) / 2;
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
@@ -475,9 +473,7 @@ void Thread::search() {
       if (!Signals.stop)
           completedDepth = rootDepth;
 
-      if (mainThread)
-          mainThread->completedBestMove = rootMoves[0].pv[0];
-      else
+      if (!mainThread)
           continue;
 
       // If skill level is enabled and time is up, pick a sub-optimal best move
