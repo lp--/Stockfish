@@ -512,7 +512,7 @@ void Thread::search() {
               // from the previous search and just did a fast verification.
               const int F[] = { mainThread->failedLow,
                                 bestValue - mainThread->previousScore,
-                                mainThread->failedHigh, };
+                                mainThread->failedHigh};
 
               int improvingFactor = std::max(_MIN, std::min(_MAX, _X0 + _FL * F[0] - _FH * F[2] - _X1 * F[1]/10));
               double unstablePvFactor = 1 + mainThread->bestMoveChanges;
