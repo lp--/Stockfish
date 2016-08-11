@@ -359,6 +359,7 @@ void Thread::search() {
 
   size_t multiPV = Options["MultiPV"];
   Skill skill(Options["Skill Level"]);
+  bool resolveFailHigh = !Limits.use_time_management() || multiPV > 1;
 
   // When playing with strength handicap enable MultiPV search that we will
   // use behind the scenes to retrieve a set of possible moves.
@@ -443,6 +444,12 @@ void Thread::search() {
               }
               else if (bestValue >= beta)
               {
+		  if(!resolveFailHigh)
+		  {
+                     if (mainThread)
+                        mainThread->failedLow = true;
+                     break;
+                  }
                   alpha = (alpha + beta) / 2;
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
               }
@@ -493,9 +500,10 @@ void Thread::search() {
               // of the available time has been used, or if we matched an easyMove
               // from the previous search and just did a fast verification.
               const int F[] = { mainThread->failedLow,
-                                bestValue - mainThread->previousScore };
+                                bestValue - mainThread->previousScore,
+                                mainThread->failedHigh, };
 
-              int improvingFactor = std::max(229, std::min(715, 357 + 119 * F[0] - 6 * F[1]));
+              int improvingFactor = std::max(229, std::min(715, 357 + 119 * F[0] - 0 * F[2] - 6 * F[1]));
               double unstablePvFactor = 1 + mainThread->bestMoveChanges;
 
               bool doEasyMove =   rootMoves[0].pv[0] == easyMove
