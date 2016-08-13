@@ -256,8 +256,8 @@ TUNE ( SetRange(-240, 240), _FH);
 int _DELTA=18, _D1=25, _D2 = 5;
 TUNE(_DELTA, _D1, _D2);
 
-int _DELTA1 = 0, _D3=10, _D4=0;
-TUNE (SetRange(-10, 10), _DELTA1, SetRange(-25, 25), _D3, SetRange(-10, 10), _D4);
+int _DELTA1 = 0, _D3=20, _D4=0;
+TUNE (SetRange(-20, 20), _DELTA1, SetRange(-50, 50), _D3, SetRange(-20, 20), _D4);
 
 /// MainThread::search() is called by the main thread when the program receives
 /// the UCI 'go' command. It searches from the root position and outputs the "bestmove".
@@ -392,7 +392,8 @@ void Thread::search() {
 
       // Age out PV variability metric
       if (mainThread)
-          mainThread->bestMoveChanges *= _X/1000., mainThread->failedLow = false;
+	mainThread->bestMoveChanges *= _X/1000., mainThread->failedLow = false, 
+        mainThread->failedHigh=false;
 
       // Save the last iteration's scores before first PV line is searched and
       // all the move scores except the (new) PV are set to -VALUE_INFINITE.
@@ -457,7 +458,7 @@ void Thread::search() {
 		  if(!resolveFailHigh)
 		  {
                      if (mainThread)
-                        mainThread->failedLow = true;
+                        mainThread->failedHigh = true;
                      break;
                   }
                   alpha = (alpha + beta) / 2;
