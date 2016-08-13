@@ -382,7 +382,7 @@ void Thread::search() {
 
       // Age out PV variability metric
       if (mainThread)
-          mainThread->bestMoveChanges *= 0.505, mainThread->failedLow = false;
+          mainThread->bestMoveChanges *= 0.54, mainThread->failedLow = false;
 
       // Save the last iteration's scores before first PV line is searched and
       // all the move scores except the (new) PV are set to -VALUE_INFINITE.
@@ -395,7 +395,7 @@ void Thread::search() {
           // Reset aspiration window starting size
           if (rootDepth >= 5 * ONE_PLY)
           {
-              delta = Value(18);
+              delta = Value(17);
               alpha = std::max(rootMoves[PVIdx].previousScore - delta,-VALUE_INFINITE);
               beta  = std::min(rootMoves[PVIdx].previousScore + delta, VALUE_INFINITE);
           }
@@ -442,14 +442,8 @@ void Thread::search() {
                       Signals.stopOnPonderhit = false;
                   }
               }
-              else if (bestValue >= beta)
+              else if (resolveFailHigh && bestValue >= beta)
               {
-		  if(!resolveFailHigh)
-		  {
-                     if (mainThread)
-                        mainThread->failedLow = true;
-                     break;
-                  }
                   alpha = (alpha + beta) / 2;
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
               }
@@ -500,18 +494,17 @@ void Thread::search() {
               // of the available time has been used, or if we matched an easyMove
               // from the previous search and just did a fast verification.
               const int F[] = { mainThread->failedLow,
-                                bestValue - mainThread->previousScore,
-                                mainThread->failedHigh, };
+                                bestValue - mainThread->previousScore };
 
-              int improvingFactor = std::max(229, std::min(715, 357 + 119 * F[0] - 0 * F[2] - 6 * F[1]));
+              int improvingFactor = std::max(223, std::min(734, 294 + 113 * F[0] - 6 * F[1]));
               double unstablePvFactor = 1 + mainThread->bestMoveChanges;
 
               bool doEasyMove =   rootMoves[0].pv[0] == easyMove
                                && mainThread->bestMoveChanges < 0.03
-                               && Time.elapsed() > Time.optimum() * 5 / 42;
+                               && Time.elapsed() > Time.optimum() * 25 / 212;
 
               if (   rootMoves.size() == 1
-                  || Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 628
+                  || Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 583
                   || (mainThread->easyMovePlayed = doEasyMove))
               {
                   // If we are allowed to ponder do not stop the search now but
