@@ -382,7 +382,7 @@ void Thread::search() {
 
       // Age out PV variability metric
       if (mainThread)
-          mainThread->bestMoveChanges *= 0.54, mainThread->failedLow = false;
+          mainThread->bestMoveChanges *= 0.5, mainThread->failedLow = false;
 
       // Save the last iteration's scores before first PV line is searched and
       // all the move scores except the (new) PV are set to -VALUE_INFINITE.
@@ -397,7 +397,7 @@ void Thread::search() {
           {
               delta = Value(17);
               alpha = std::max(rootMoves[PVIdx].previousScore - delta,-VALUE_INFINITE);
-              beta  = std::min(rootMoves[PVIdx].previousScore + delta, VALUE_INFINITE);
+              beta  = std::min(rootMoves[PVIdx].previousScore + delta - 1, VALUE_INFINITE);
           }
 
           // Start with a small aspiration window and, in the case of a fail
@@ -433,7 +433,7 @@ void Thread::search() {
               // re-search, otherwise exit the loop.
               if (bestValue <= alpha)
               {
-                  beta = (alpha + beta) / 2;
+                  beta = (alpha + beta) / 2 - 1;
                   alpha = std::max(bestValue - delta, -VALUE_INFINITE);
 
                   if (mainThread)
@@ -496,15 +496,15 @@ void Thread::search() {
               const int F[] = { mainThread->failedLow,
                                 bestValue - mainThread->previousScore };
 
-              int improvingFactor = std::max(223, std::min(734, 294 + 113 * F[0] - 6 * F[1]));
+              int improvingFactor = std::max(227, std::min(683, 341 + 115 * F[0] - 6 * F[1]));
               double unstablePvFactor = 1 + mainThread->bestMoveChanges;
 
               bool doEasyMove =   rootMoves[0].pv[0] == easyMove
                                && mainThread->bestMoveChanges < 0.03
-                               && Time.elapsed() > Time.optimum() * 25 / 212;
+                               && Time.elapsed() > Time.optimum() * 5 / 43;
 
               if (   rootMoves.size() == 1
-                  || Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 583
+                  || Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 595
                   || (mainThread->easyMovePlayed = doEasyMove))
               {
                   // If we are allowed to ponder do not stop the search now but
