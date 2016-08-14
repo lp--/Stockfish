@@ -249,15 +249,16 @@ uint64_t Search::perft(Position& pos, Depth depth) {
 
 template uint64_t Search::perft<true>(Position&, Depth);
 
-int _MIN=229, _MAX=715, _X0=357, _X1 = 60, _FL=119, _FH=0,  _EM=210, _X = 505;
-TUNE(_MIN, _MAX, _X0, _X1,  _FL, _EM, _X);
-TUNE ( SetRange(-240, 240), _FH);
 
-int _DELTA=18, _D1=25, _D2 = 5;
+
+int _DELTA[] = { 18, 18, 18}; 
+int _D1[] = {25, 25, 25}; 
+int _D2[] = {5, 5, 5};
+
 TUNE(_DELTA, _D1, _D2);
 
-int _DELTA1 = 0, _D3=20, _D4=0;
-TUNE (SetRange(-20, 20), _DELTA1, SetRange(-50, 50), _D3, SetRange(-20, 20), _D4);
+//int _DELTA1 = 0, _D3=20, _D4=0;
+//TUNE (SetRange(-20, 20), _DELTA1, SetRange(-50, 50), _D3, SetRange(-20, 20), _D4);
 
 /// MainThread::search() is called by the main thread when the program receives
 /// the UCI 'go' command. It searches from the root position and outputs the "bestmove".
@@ -347,7 +348,7 @@ void MainThread::search() {
 void Thread::search() {
 
   Stack stack[MAX_PLY+7], *ss = stack+5; // To allow referencing (ss-5) and (ss+2)
-  Value bestValue, alpha, beta, delta, delta1;
+  Value bestValue, alpha, beta, delta; //, delta1;
   Move easyMove = MOVE_NONE;
   MainThread* mainThread = (this == Threads.main() ? Threads.main() : nullptr);
 
@@ -356,7 +357,7 @@ void Thread::search() {
   bestValue = delta = alpha = -VALUE_INFINITE;
   beta = VALUE_INFINITE;
   completedDepth = DEPTH_ZERO;
-  delta1 = VALUE_ZERO;
+  //delta1 = VALUE_ZERO;
 
   if (mainThread)
   {
@@ -383,17 +384,18 @@ void Thread::search() {
   {
       // Set up the new depths for the helper threads skipping on average every
       // 2nd ply (using a half-density matrix).
+      size_t skipSize = 0;
       if (!mainThread)
       {
           const Row& row = HalfDensity[(idx - 1) % HalfDensitySize];
+          skipSize =  row.size()/2;
           if (row[(rootDepth + rootPos.game_ply()) % row.size()])
              continue;
       }
 
       // Age out PV variability metric
       if (mainThread)
-	mainThread->bestMoveChanges *= _X/1000., mainThread->failedLow = false, 
-        mainThread->failedHigh=false;
+          mainThread->bestMoveChanges *= 0.505, mainThread->failedLow = false;
 
       // Save the last iteration's scores before first PV line is searched and
       // all the move scores except the (new) PV are set to -VALUE_INFINITE.
@@ -406,9 +408,9 @@ void Thread::search() {
           // Reset aspiration window starting size
           if (rootDepth >= 5 * ONE_PLY)
           {
-	      delta = Value(_DELTA), delta1 = Value(_DELTA1);
+	     delta = Value(_DELTA[skipSize]); // delta1 = Value(_DELTA1[skipSize]);
               alpha = std::max(rootMoves[PVIdx].previousScore - delta,-VALUE_INFINITE);
-              beta  = std::min(rootMoves[PVIdx].previousScore + delta + delta1, VALUE_INFINITE);
+              beta  = std::min(rootMoves[PVIdx].previousScore + delta, VALUE_INFINITE);
           }
 
           // Start with a small aspiration window and, in the case of a fail
@@ -444,7 +446,7 @@ void Thread::search() {
               // re-search, otherwise exit the loop.
               if (bestValue <= alpha)
               {
-                  beta = (alpha + beta) / 2 + delta1;
+                  beta = (alpha + beta) / 2;
                   alpha = std::max(bestValue - delta, -VALUE_INFINITE);
 
                   if (mainThread)
@@ -453,22 +455,15 @@ void Thread::search() {
                       Signals.stopOnPonderhit = false;
                   }
               }
-              else if (bestValue >= beta)
+              else if (resolveFailHigh && bestValue >= beta)
               {
-		  if(!resolveFailHigh)
-		  {
-                     if (mainThread)
-                        mainThread->failedHigh = true;
-                     break;
-                  }
                   alpha = (alpha + beta) / 2;
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
               }
               else
                   break;
 
-              delta += delta * _D1 / 100 + _D2;
-              delta1 += delta1 * _D3 / 100  + _D4;
+              delta += delta * _D1[skipSize] / 100 + _D2[skipSize];
 
               assert(alpha >= -VALUE_INFINITE && beta <= VALUE_INFINITE);
           }
@@ -512,15 +507,14 @@ void Thread::search() {
               // of the available time has been used, or if we matched an easyMove
               // from the previous search and just did a fast verification.
               const int F[] = { mainThread->failedLow,
-                                bestValue - mainThread->previousScore,
-                                mainThread->failedHigh};
+                                bestValue - mainThread->previousScore };
 
-              int improvingFactor = std::max(_MIN, std::min(_MAX, _X0 + _FL * F[0] - _FH * F[2] - _X1 * F[1]/10));
+              int improvingFactor = std::max(229, std::min(715, 357 + 119 * F[0] - 6 * F[1]));
               double unstablePvFactor = 1 + mainThread->bestMoveChanges;
 
               bool doEasyMove =   rootMoves[0].pv[0] == easyMove
                                && mainThread->bestMoveChanges < 0.03
-                               && Time.elapsed() > Time.optimum() * 25 / _EM;
+                               && Time.elapsed() > Time.optimum() * 5 / 42;
 
               if (   rootMoves.size() == 1
                   || Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 598
