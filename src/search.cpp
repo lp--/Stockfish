@@ -373,11 +373,12 @@ void Thread::search() {
   {
       // Set up the new depths for the helper threads skipping on average every
       // 2nd ply (using a half-density matrix).
+      bool noSkip = true;
       if (!mainThread)
       {
           const Row& row = HalfDensity[(idx - 1) % HalfDensitySize];
           if (row[(rootDepth + rootPos.game_ply()) % row.size()])
-             continue;
+             noSkip = false;
       }
 
       // Age out PV variability metric
@@ -395,7 +396,7 @@ void Thread::search() {
           // Reset aspiration window starting size
           if (rootDepth >= 5 * ONE_PLY)
           {
-              delta = Value(18);
+              delta = Value(18 - (1 - noSkip)*14);
               alpha = std::max(rootMoves[PVIdx].previousScore - delta,-VALUE_INFINITE);
               beta  = std::min(rootMoves[PVIdx].previousScore + delta, VALUE_INFINITE);
           }
@@ -431,7 +432,7 @@ void Thread::search() {
 
               // In case of failing low/high increase aspiration window and
               // re-search, otherwise exit the loop.
-              if (bestValue <= alpha)
+              if (noSkip && bestValue <= alpha)
               {
                   beta = (alpha + beta) / 2;
                   alpha = std::max(bestValue - delta, -VALUE_INFINITE);
@@ -442,7 +443,7 @@ void Thread::search() {
                       Signals.stopOnPonderhit = false;
                   }
               }
-              else if (bestValue >= beta)
+              else if (noSkip && bestValue >= beta)
               {
                   alpha = (alpha + beta) / 2;
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
