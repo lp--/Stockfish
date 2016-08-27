@@ -402,7 +402,7 @@ void Thread::search() {
               if(rootDepth <= Threads.maxCompletedDepth)
 		shift = Threads.deepestScore - rootMoves[PVIdx].previousScore;
                 
-              shift = std::max(std::min(shift,Value(9)),Value(-9));
+              //shift = std::max(std::min(shift,Value(9)),Value(-9));
 
               alpha = std::max(rootMoves[PVIdx].previousScore - delta + shift,-VALUE_INFINITE);
               beta  = std::min(rootMoves[PVIdx].previousScore + delta + shift, VALUE_INFINITE);
