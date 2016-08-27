@@ -98,6 +98,8 @@ struct ThreadPool : public std::vector<Thread*> {
   void start_thinking(Position&, StateListPtr&, const Search::LimitsType&);
   void read_uci_options();
   int64_t nodes_searched();
+  std::atomic<Depth> maxCompletedDepth;
+  std::atomic<Value> deepestScore;
 
 private:
   StateListPtr setupStates;

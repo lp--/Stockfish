@@ -347,6 +347,7 @@ void Thread::search() {
   bestValue = delta = alpha = -VALUE_INFINITE;
   beta = VALUE_INFINITE;
   completedDepth = DEPTH_ZERO;
+  Threads.maxCompletedDepth = DEPTH_ZERO;
 
   if (mainThread)
   {
@@ -396,9 +397,15 @@ void Thread::search() {
           // Reset aspiration window starting size
           if (rootDepth >= 5 * ONE_PLY)
           {
-              delta = Value(18);
-              alpha = std::max(rootMoves[PVIdx].previousScore - delta,-VALUE_INFINITE);
-              beta  = std::min(rootMoves[PVIdx].previousScore + delta, VALUE_INFINITE);
+              delta = Value(18); 
+              Value shift = VALUE_ZERO;
+              if(rootDepth <= Threads.maxCompletedDepth)
+		shift = Threads.deepestScore - rootMoves[PVIdx].previousScore;
+                
+              shift = std::max(std::min(shift,Value(9)),Value(-9));
+
+              alpha = std::max(rootMoves[PVIdx].previousScore - delta + shift,-VALUE_INFINITE);
+              beta  = std::min(rootMoves[PVIdx].previousScore + delta + shift, VALUE_INFINITE);
           }
 
           // Start with a small aspiration window and, in the case of a fail
@@ -471,7 +478,11 @@ void Thread::search() {
       }
 
       if (!Signals.stop)
+      {
           completedDepth = rootDepth;
+          if (Threads.maxCompletedDepth <= rootDepth)
+              Threads.maxCompletedDepth = rootDepth, Threads.deepestScore = bestValue;
+      }
 
       if (!mainThread)
           continue;
