@@ -261,6 +261,8 @@ void MainThread::search() {
   int contempt = Options["Contempt"] * PawnValueEg / 100; // From centipawns
   DrawValue[ us] = VALUE_DRAW - Value(contempt);
   DrawValue[~us] = VALUE_DRAW + Value(contempt);
+ 
+  Threads.bestIdx = 0;
 
   if (rootMoves.empty())
   {
@@ -344,10 +346,9 @@ void Thread::search() {
 
   std::memset(ss-5, 0, 8 * sizeof(Stack));
 
-  bestValue = delta = alpha = -VALUE_INFINITE;
+  bestValue = delta = alpha = completedScore = -VALUE_INFINITE;
   beta = VALUE_INFINITE;
   completedDepth = DEPTH_ZERO;
-  Threads.maxCompletedDepth = DEPTH_ZERO;
 
   if (mainThread)
   {
@@ -398,12 +399,10 @@ void Thread::search() {
           if (rootDepth >= 5 * ONE_PLY)
           {
               delta = Value(18); 
-              Value shift = VALUE_ZERO;
-              if(rootDepth <= Threads.maxCompletedDepth)
-		shift = Threads.deepestScore - rootMoves[PVIdx].previousScore;
+	      Value shift = Threads[Threads.bestIdx]->completedScore - rootMoves[PVIdx].previousScore;
                 
-              //shift = std::max(std::min(shift,Value(9)),Value(-9));
-
+              shift = std::max(std::min(shift,Value(9)),Value(-9));
+             
               alpha = std::max(rootMoves[PVIdx].previousScore - delta + shift,-VALUE_INFINITE);
               beta  = std::min(rootMoves[PVIdx].previousScore + delta + shift, VALUE_INFINITE);
           }
@@ -480,8 +479,19 @@ void Thread::search() {
       if (!Signals.stop)
       {
           completedDepth = rootDepth;
-          if (Threads.maxCompletedDepth <= rootDepth)
-              Threads.maxCompletedDepth = rootDepth, Threads.deepestScore = bestValue;
+          completedScore = bestValue;
+
+          if (rootDepth >  Threads.main()->completedDepth && bestValue > Threads[Threads.bestIdx]->completedScore)
+              Threads.bestIdx = idx;
+          else if(Threads.bestIdx == idx || mainThread) // best thread becomes invalid
+          {
+              Thread* xth = Threads.main();
+              for (Thread* th : Threads)
+                   if (   th->completedDepth > xth->completedDepth
+                       && th->completedScore > xth->completedScore)
+                       xth = th;
+              Threads.bestIdx = xth->idx;
+          }
       }
 
       if (!mainThread)

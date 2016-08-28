@@ -69,7 +69,8 @@ public:
   HistoryStats history;
   MoveStats counterMoves;
   FromToStats fromTo;
-  Depth completedDepth;
+  std::atomic<Depth> completedDepth;
+  std::atomic<Value> completedScore;
   std::atomic_bool resetCalls;
 };
 
@@ -98,8 +99,7 @@ struct ThreadPool : public std::vector<Thread*> {
   void start_thinking(Position&, StateListPtr&, const Search::LimitsType&);
   void read_uci_options();
   int64_t nodes_searched();
-  std::atomic<Depth> maxCompletedDepth;
-  std::atomic<Value> deepestScore;
+  std::atomic<size_t> bestIdx;
 
 private:
   StateListPtr setupStates;
