@@ -361,6 +361,7 @@ void Thread::search() {
 
   size_t multiPV = Options["MultiPV"];
   Skill skill(Options["Skill Level"]);
+  bool resolveFailHigh = !Limits.use_time_management() || multiPV > 1;
 
   // When playing with strength handicap enable MultiPV search that we will
   // use behind the scenes to retrieve a set of possible moves.
@@ -449,7 +450,7 @@ void Thread::search() {
                       Signals.stopOnPonderhit = false;
                   }
               }
-              else if (bestValue >= beta)
+              else if (resolveFailHigh && bestValue >= beta)
               {
                   alpha = (alpha + beta) / 2;
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
