@@ -26,6 +26,7 @@
 #include "thread.h"
 #include "uci.h"
 #include "syzygy/tbprobe.h"
+#include "numasf.h"
 
 ThreadPool Threads; // Global object
 
@@ -38,6 +39,7 @@ Thread::Thread() {
   maxPly = callsCnt = 0;
   history.clear();
   counterMoves.clear();
+  counterMoveHistory = nullptr;
   idx = Threads.size(); // Start from 0
 
   std::unique_lock<Mutex> lk(mutex);
@@ -95,6 +97,10 @@ void Thread::start_searching(bool resume) {
 
 void Thread::idle_loop() {
 
+  NumaNode* node = NumaInfo.nodeForThread(idx);
+  NumaInfo.bindThread(node);
+  counterMoveHistory = NumaInfo.getCmhTable(node);
+
   while (!exit)
   {
       std::unique_lock<Mutex> lk(mutex);
@@ -124,6 +130,7 @@ void ThreadPool::init() {
 
   push_back(new MainThread);
   read_uci_options();
+  NumaInfo.display();
 }
 
 
