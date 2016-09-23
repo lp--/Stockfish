@@ -16,55 +16,31 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/*
- * numa.hpp
- *
- *  Created on: Jul 24, 2014
- *      Author: petero
- */
-
-#ifndef NUMA_HPP_
-#define NUMA_HPP_
+#ifndef NUMA_H
+#define NUMA_H
 
 #include <vector>
 
 
-/** Bind search threads to suitable NUMA nodes. */
+/// Bind a threads to the best suitable NUMA node
 class Numa {
 public:
-    /** Get singleton instance. */
-    static Numa& instance();
+    static Numa& instance() {
+      static Numa numa;
+      return numa;
+    }
 
-    /** Disable NUMA awareness. Useful when running several single-threaded
-     *  test games simultaneously on NUMA hardware. */
-    void disable();
+    /// Disable NUMA awareness. Useful when running several single-threaded
+    /// test games simultaneously on NUMA hardware.
+    void disable() { threadToNode.clear(); }
 
-    /** Preferred node for a given search thread. */
-    int nodeForThread(int threadNo) const;
-
-    /** Bind current thread to NUMA node determined by nodeForThread(). */
-    void bindThread(int threadNo) const;
-
-    /** Return true if threadNo runs on the same NUMA node as thread 0. */
-    bool isMainNode(int threadNo) const;
+    /// Bind current thread to NUMA node determined by threadToNode
+    void bindThisThread(size_t idx) const;
 
 private:
     Numa();
 
-    /** Thread number to node number. */
     std::vector<int> threadToNode;
-
-    struct NodeInfo {
-        explicit NodeInfo(int n = 0, int c = 0, int t = 0);
-        int node;
-        int numCores;
-        int numThreads;
-    };
 };
 
-inline
-Numa::NodeInfo::NodeInfo(int n, int c, int t)
-    : node(n), numCores(c), numThreads(t) {
-}
-
-#endif /* NUMA_HPP_ */
+#endif

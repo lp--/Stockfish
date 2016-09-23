@@ -16,40 +16,22 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/*
- * numa.cpp
- *
- *  Created on: Jul 24, 2014
- *      Author: petero
- */
-
-#include "numa.hpp"
-#include "bitboard.h"
-
-#include <map>
-#include <set>
 #include <algorithm>
 #include <fstream>
 #include <iostream>
+#include <map>
+#include <set>
 
-#define NUMA
+#include "bitboard.h"
+#include "numa.h"
 
-#ifdef NUMA
 #ifdef _WIN32
 #include <windows.h>
 #else
 #include <numa.h>
 #endif
-#endif
-
-Numa&
-Numa::instance() {
-    static Numa numa;
-    return numa;
-}
 
 Numa::Numa() {
-#ifdef NUMA
 #ifdef _WIN32
     int threads = 0;
     int nodes = 0;
@@ -90,7 +72,8 @@ Numa::Numa() {
     }
 #else
     SYSTEM_LOGICAL_PROCESSOR_INFORMATION* buffer = nullptr;
-    while (true) {
+    while (true)
+    {
         if (GetLogicalProcessorInformation(buffer, &returnLength))
             break;
         if (GetLastError() == ERROR_INSUFFICIENT_BUFFER) {
@@ -98,13 +81,16 @@ Numa::Numa() {
             buffer = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION*)malloc(returnLength);
             if (!buffer)
                 return;
-        } else {
+        }
+        else
+        {
             free(buffer);
             return;
         }
     }
     SYSTEM_LOGICAL_PROCESSOR_INFORMATION* ptr = buffer;
-    while (byteOffset + sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION) <= returnLength) {
+    while (byteOffset + sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION) <= returnLength)
+    {
         switch (ptr->Relationship) {
         case RelationNumaNode:
             nodes++;
@@ -215,30 +201,15 @@ Numa::Numa() {
         }
     }
 #endif
-#endif
 }
 
-void
-Numa::disable() {
-    threadToNode.clear();
-}
+void Numa::bindThisThread(size_t idx) const {
 
-int
-Numa::nodeForThread(int threadNo) const {
-#ifdef NUMA
-    if (threadNo < (int)threadToNode.size())
-        return threadToNode[threadNo];
-#endif
-    return -1;
-}
+  if (idx >= threadToNode.size())
+      return;
 
-void
-Numa::bindThread(int threadNo) const {
-#ifdef NUMA
-    int node = nodeForThread(threadNo);
-    if (node < 0)
-        return;
-//    Logger::log([&](std::ostream& os){os << "threadNo:" << threadNo << " node:" << node;});
+  int node = threadToNode[idx];
+
 #ifdef _WIN32
 #if _WIN32_WINNT >= 0x0601
     GROUP_AFFINITY mask;
@@ -253,12 +224,4 @@ Numa::bindThread(int threadNo) const {
     numa_run_on_node(node);
     numa_set_preferred(node);
 #endif
-#endif
-}
-
-bool
-Numa::isMainNode(int threadNo) const {
-    if (threadToNode.empty())
-        return true; // Not NUMA hardware
-    return nodeForThread(threadNo) == threadToNode[0];
 }

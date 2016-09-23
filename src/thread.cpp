@@ -22,7 +22,7 @@
 #include <cassert>
 
 #include "movegen.h"
-#include "numa.hpp"
+#include "numa.h"
 #include "search.h"
 #include "thread.h"
 #include "uci.h"
@@ -96,7 +96,7 @@ void Thread::start_searching(bool resume) {
 
 void Thread::idle_loop() {
 
-  Numa::instance().bindThread(idx);
+  Numa::instance().bindThisThread(idx);
 
   while (!exit)
   {
