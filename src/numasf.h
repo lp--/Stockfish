@@ -9,7 +9,6 @@
 #include <sstream>
 
 #include "misc.h"
-#include "movepick.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -24,9 +23,6 @@ typedef BOOL (WINAPI *STGA)(HANDLE, GROUP_AFFINITY*, PGROUP_AFFINITY);
 class NumaNode {
 
 public:
-
-  // pointer to our perthread cmh
-  CounterMoveHistoryStats* cmhTable;
 
   // the node number assigned by OS
   // this is a DWORD on windows
@@ -69,7 +65,6 @@ public:
   NumaNode(DWORD _nodeNumber, GROUP_AFFINITY _groupMask) {
       nodeNumber = _nodeNumber;
       coreCount = 0;
-      cmhTable = nullptr;
       groupMask= _groupMask;
       mask = 0;
   }
@@ -77,7 +72,6 @@ public:
   NumaNode(DWORD _nodeNumber, ULONGLONG _mask) {
       nodeNumber = _nodeNumber;
       coreCount = 0;
-      cmhTable = nullptr;
       groupMask.Group = 0xFFFF;
       groupMask.Mask = 0;
       mask = _mask;
@@ -87,17 +81,13 @@ public:
   NumaNode(int _nodeNumber, bitmask* _cpuBitset) {
       nodeNumber = _nodeNumber;
       coreCount = 0;
-      cmhTable = nullptr;
       cpuBitset = _cpuBitset;
   }
 #endif
 
-
-  // when copying a node we do not want to copy cmhTable
   NumaNode(const NumaNode &source) {
     nodeNumber = source.nodeNumber;
     coreCount = source.coreCount;
-    cmhTable = nullptr;
 #ifdef _WIN32
     groupMask = source.groupMask;
     mask = source.mask;
@@ -107,14 +97,7 @@ public:
 #endif
   }
 
-
-  // destructing a node involved freeing the per node memory
-  // and the variable size cpuBitset on linux
   ~NumaNode() {
-    if (cmhTable != nullptr) {
-      delete cmhTable;
-    }
-    cmhTable = nullptr;
 #ifndef _WIN32  // use linux
     numa_bitmask_free(cpuBitset);
 #endif
@@ -127,7 +110,6 @@ public:
       ss << "********************\n";
       ss << "nodeNumber: " << nodeNumber << "\n";
       ss << "coreCount:  " << coreCount << "\n";
-      ss << "cmhTable:   " << cmhTable << "\n";
 
 #ifdef _WIN32
       if (groupMask.Group != 0xFFFF) {
@@ -178,18 +160,6 @@ public:
 
   // bind current thread to node
   void bindThread(NumaNode* numaNode);
-
-  // per node memory allocation
-  // this is done with the help of NumaState struct because it may later use imported functions
-  //   for the allocation instead of new operator
-  // for example the new opterator rarely returns an address that is page-aligned
-  // also there is nogaurantee where the memory is allocated with new
-  CounterMoveHistoryStats* getCmhTable(NumaNode* node){
-      if (node->cmhTable == nullptr) {
-          node->cmhTable = new CounterMoveHistoryStats;
-      }
-      return node->cmhTable;
-  }
 
   NumaState();
 
