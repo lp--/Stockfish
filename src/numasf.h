@@ -1,12 +1,9 @@
-
-
-
 #ifndef NUMASF_H_
 #define NUMASF_H_
 
-#include <vector>
 #include <iostream>
 #include <sstream>
+#include <vector>
 
 #include "misc.h"
 
@@ -18,162 +15,125 @@ typedef BOOL (WINAPI *STGA)(HANDLE, GROUP_AFFINITY*, PGROUP_AFFINITY);
 #include <numa.h>
 #endif
 
-
-
 class NumaNode {
 
 public:
+  // The node number assigned by OS
+  int nodeNumber; // FIXME this is a DWORD on windows
 
-  // the node number assigned by OS
-  // this is a DWORD on windows
-  // DWORD the same as int?
-  int nodeNumber;
-
-  // the number of physical cores in this node
-  // this will be <= the number of logical processors in this node
+  // The number of physical cores in this node, this will be <= the number of
+  // logical processors in this node.
   size_t coreCount;
 
-  // now keep a bitset of logical processors in this node
-  // this is OS dependent
 #ifdef _WIN32
+  // GROUP_AFFINITY structure contains a group number and a 64bit mask
+  GROUP_AFFINITY groupMask;
 
-  // this is used when using windows processor groups
-  GROUP_AFFINITY groupMask;   // GROUP_AFFINITY structure contains a group number and a 64bit mask
-
-  // this is used when using windows but not its processor groups
-  // the groupMask.Group should be -1 in this case
-  // it might be possible to use groupMask.Mask member in this case
-  ULONGLONG mask;             // just keep a 64bit mask
-
-#else   // don't use windows
-
-  // This is a bitset of variable size
-  // cpuBitset is a pointer to an allocated bitmask struct
-  //    which itself contains a pointer to a bitmask of variable size
-  // provided by libnuma
+  // When processor groups is not used groupMask should be -1, in this case
+  // fallback on a 64bit mask.
+  ULONGLONG mask;
+#else
+  // cpuBitset is a pointer to an allocated bitmask struct which itself contains
+  // a pointer to a bitmask of variable size provided by libnuma.
   bitmask* cpuBitset;
-
 #endif
 
-
-
-  // various OS dependent node constructors
-  // at construction per node memory pointers are null
-  // and allocated once needed
 #ifdef _WIN32
-  // use windows processor groups
-  NumaNode(DWORD _nodeNumber, GROUP_AFFINITY _groupMask) {
-      nodeNumber = _nodeNumber;
-      coreCount = 0;
-      groupMask= _groupMask;
-      mask = 0;
+  // To use with Windows's processor groups
+  NumaNode(DWORD _nodeNumber, const GROUP_AFFINITY& _groupMask) {
+    nodeNumber = _nodeNumber;
+    coreCount = 0;
+    groupMask = _groupMask;
+    mask = 0;
   }
-  // use windows but not its processor groups
+  // To use withouth Windows's processor groups
   NumaNode(DWORD _nodeNumber, ULONGLONG _mask) {
-      nodeNumber = _nodeNumber;
-      coreCount = 0;
-      groupMask.Group = 0xFFFF;
-      groupMask.Mask = 0;
-      mask = _mask;
+    nodeNumber = _nodeNumber;
+    coreCount = 0;
+    groupMask.Group = 0xFFFF;
+    groupMask.Mask = 0;
+    mask = _mask;
   }
 
-#else   // use linux
+#else
   NumaNode(int _nodeNumber, bitmask* _cpuBitset) {
-      nodeNumber = _nodeNumber;
-      coreCount = 0;
-      cpuBitset = _cpuBitset;
+    nodeNumber = _nodeNumber;
+    coreCount = 0;
+    cpuBitset = _cpuBitset;
   }
 #endif
 
-  NumaNode(const NumaNode &source) {
-    nodeNumber = source.nodeNumber;
-    coreCount = source.coreCount;
+  NumaNode(const NumaNode& nn) {
+    nodeNumber = nn.nodeNumber;
+    coreCount = nn.coreCount;
 #ifdef _WIN32
-    groupMask = source.groupMask;
-    mask = source.mask;
-#else   // use linux
+    groupMask = nn.groupMask;
+    mask = nn.mask;
+#else
     cpuBitset = numa_allocate_cpumask();
     copy_bitmask_to_bitmask(source.cpuBitset, cpuBitset);
 #endif
   }
 
   ~NumaNode() {
-#ifndef _WIN32  // use linux
+#ifndef _WIN32
     numa_bitmask_free(cpuBitset);
 #endif
   }
 
-
-  // various OS dependent printers
   std::string print() {
-      std::ostringstream ss;
-      ss << "********************\n";
-      ss << "nodeNumber: " << nodeNumber << "\n";
-      ss << "coreCount:  " << coreCount << "\n";
+    std::ostringstream ss;
+    ss << "nodeNumber: " << nodeNumber << "\n";
+    ss << "coreCount:  " << coreCount << "\n";
 
 #ifdef _WIN32
-      if (groupMask.Group != 0xFFFF) {
-          // use windows processor groups
-          ss << "Group:      " << groupMask.Group << "\n";
-          ss << "Mask:       " << (void*)groupMask.Mask;
-      } else {
-          // use windows but not its processor groups
-          ss << "mask:       " << (void*)mask;
-      }
-
-#else   // use linux
-      ss << "cpuBitset: ";
-      for (unsigned int i = 0; i < 8*numa_bitmask_nbytes(cpuBitset); i++) {
-          if (numa_bitmask_isbitset(cpuBitset, i))
-              ss << " " << i;
-      }
-
+    if (groupMask.Group != 0xFFFF) // Use processors groups?
+    {
+        ss << "Group:      " << groupMask.Group << "\n";
+        ss << "Mask:       " << (void*)groupMask.Mask;
+    } else
+        ss << "mask:       " << (void*)mask;
+#else
+    ss << "cpuBitset: ";
+    for (unsigned int i = 0; i < 8 * numa_bitmask_nbytes(cpuBitset); i++)
+        if (numa_bitmask_isbitset(cpuBitset, i))
+            ss << " " << i;
 #endif
-      return ss.str();
+    return ss.str();
   }
-
 };
 
 
-
 class NumaState {
-public:
 
-  // imported functions that are not present in all kernel32.dll's
+public:
+  NumaState();
+
+  // Preferred node for a given search thread
+  NumaNode* nodeForThread(size_t threadNo);
+
+  // Bind current thread to node
+  void bindThread(NumaNode* numaNode);
+
+  // Print out all of the nodes to stdout
+  void display() {
+    for (auto& nn : nodeVector)
+        sync_cout << nn.print() << sync_endl;
+  }
+
+  // Imported functions that are not present in all kernel32.dll's
 #ifdef _WIN32
   GLPIEX imp_GetLogicalProcessorInformationEx;
   STGA   imp_SetThreadGroupAffinity;
 #endif
 
-  // if numa functions are not present,
-  //   there should be a dummy node in it with nodeNumber = -1
-  // this vector should not be empty
+  // If numa functions are not present, there should be a dummy node in it with
+  // nodeNumber = -1, this vector should not be empty.
   std::vector<NumaNode> nodeVector;
 
-  // total number of cores in all nodes
-  // this should not be 0
-  // it is set to 1 when using a dummy node
+  // Total number of cores in all nodes. It is set to 1 when using a dummy node
   size_t coreCount;
-
-  // preferred node for a given search thread
-  NumaNode* nodeForThread(size_t threadNo);
-
-  // bind current thread to node
-  void bindThread(NumaNode* numaNode);
-
-  NumaState();
-
-  // print out all of the nodes to stdout
-  void display() {
-      for (std::vector<NumaNode>::iterator node = nodeVector.begin(); node != nodeVector.end(); ++node) {
-          sync_cout << node->print() << sync_endl;
-      }
-  }
-
-
-
 };
-
 
 extern NumaState NumaInfo;
 
