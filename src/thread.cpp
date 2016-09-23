@@ -22,11 +22,11 @@
 #include <cassert>
 
 #include "movegen.h"
+#include "numa.hpp"
 #include "search.h"
 #include "thread.h"
 #include "uci.h"
 #include "syzygy/tbprobe.h"
-#include "numasf.h"
 
 ThreadPool Threads; // Global object
 
@@ -96,8 +96,7 @@ void Thread::start_searching(bool resume) {
 
 void Thread::idle_loop() {
 
-  NumaNode* node = NumaInfo.nodeForThread(idx);
-  NumaInfo.bindThread(node);
+  Numa::instance().bindThread(idx);
 
   while (!exit)
   {
@@ -128,7 +127,6 @@ void ThreadPool::init() {
 
   push_back(new MainThread);
   read_uci_options();
-  NumaInfo.display();
 }
 
 
