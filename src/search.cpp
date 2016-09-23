@@ -214,7 +214,7 @@ void Search::clear() {
       th->history.clear();
       th->counterMoves.clear();
       th->fromTo.clear();
-      th->counterMoveHistory->clear(); // some harmless possible overlap here
+      th->counterMoveHistory.clear();
   }
 
   Threads.main()->previousScore = VALUE_INFINITE;
@@ -807,7 +807,7 @@ namespace {
             if (pos.legal(move))
             {
                 ss->currentMove = move;
-                ss->counterMoves = &(*(thisThread->counterMoveHistory))[pos.moved_piece(move)][to_sq(move)];
+                ss->counterMoves = &thisThread->counterMoveHistory[pos.moved_piece(move)][to_sq(move)];
                 pos.do_move(move, st, pos.gives_check(move));
                 value = -search<NonPV>(pos, ss+1, -rbeta, -rbeta+1, rdepth, !cutNode);
                 pos.undo_move(move);
@@ -967,7 +967,7 @@ moves_loop: // When in check search starts from here
       }
 
       ss->currentMove = move;
-      ss->counterMoves = &(*(thisThread->counterMoveHistory))[moved_piece][to_sq(move)];
+      ss->counterMoves = &thisThread->counterMoveHistory[moved_piece][to_sq(move)];
 
       // Step 14. Make the move
       pos.do_move(move, st, givesCheck);

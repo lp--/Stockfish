@@ -39,7 +39,6 @@ Thread::Thread() {
   maxPly = callsCnt = 0;
   history.clear();
   counterMoves.clear();
-  counterMoveHistory = nullptr;
   idx = Threads.size(); // Start from 0
 
   std::unique_lock<Mutex> lk(mutex);
@@ -99,7 +98,6 @@ void Thread::idle_loop() {
 
   NumaNode* node = NumaInfo.nodeForThread(idx);
   NumaInfo.bindThread(node);
-  counterMoveHistory = NumaInfo.getCmhTable(node);
 
   while (!exit)
   {
