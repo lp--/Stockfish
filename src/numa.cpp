@@ -214,14 +214,25 @@ void Numa::bindThisThread(size_t idx) const {
 #if _WIN32_WINNT >= 0x0601
     GROUP_AFFINITY mask;
     if (GetNumaNodeProcessorMaskEx(node, &mask))
-        SetThreadGroupAffinity(GetCurrentThread(), &mask, NULL);
+    {
+        if (SetThreadGroupAffinity(GetCurrentThread(), &mask, NULL))
+            std::cout << "Bind thread " << idx << " to group " << node << std::endl;
+        else
+            std::cout << "Failed to bind thread " << idx << " to group " << node << std::endl;
+    }
 #else
     ULONGLONG mask;
     if (GetNumaNodeProcessorMask(node, &mask))
-        SetThreadAffinityMask(GetCurrentThread(), mask);
+    {
+        if (SetThreadAffinityMask(GetCurrentThread(), mask))
+            std::cout << "Bind thread " << idx << " to node " << node << std::endl;
+        else
+            std::cout << "Failed to bind thread " << idx << " to node " << node << std::endl;
+    }
 #endif
 #else
     numa_run_on_node(node);
     numa_set_preferred(node);
+    std::cout << "Bind thread " << idx << " to node " << node << std::endl;
 #endif
 }
