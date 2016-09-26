@@ -41,6 +41,16 @@ private:
     Numa();
 
     std::vector<int> threadToNode;
+    
+    struct NodeInfo {
+      explicit NodeInfo(int n = 0, int c = 0, int t = 0);
+      int node;
+      int numCores;
+      int numThreads;
+    };
 };
+
+inline Numa::NodeInfo::NodeInfo(int n, int c, int t)
+     : node(n), numCores(c), numThreads(t) {}
 
 #endif

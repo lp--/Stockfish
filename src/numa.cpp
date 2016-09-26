@@ -131,7 +131,7 @@ Numa::Numa() {
     std::map<int, NodeInfo> nodeInfo;
     std::string baseDir("/sys/devices/system/cpu");
     for (int i = 0; ; i++) {
-        std::string cpuDir(baseDir + "/cpu" + num2Str(i));
+        std::string cpuDir(baseDir + "/cpu" + std::to_string(i));
         if (i > 0) {
             std::ifstream is(cpuDir + "/online");
             if (!is)
@@ -144,7 +144,7 @@ Numa::Numa() {
 
         int node = -1;
         for (int n = 0; n <= maxNode; n++) {
-            std::ifstream is(cpuDir + "/node" + num2Str(n));
+            std::ifstream is(cpuDir + "/node" + std::to_string(n));
             if (is) {
                 node = n;
                 break;
@@ -165,7 +165,7 @@ Numa::Numa() {
                 if (pos != std::string::npos)
                     line = line.substr(0, pos);
                 int num;
-                if (str2Num(line, num)) {
+                if ((num = std::stoi(line))) {
                     if (i == num)
                         nodeInfo[node].numCores++;
                 }
