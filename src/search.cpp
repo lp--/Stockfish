@@ -339,7 +339,8 @@ void Thread::search() {
   Value bestValue, alpha, beta, delta;
   Move easyMove = MOVE_NONE;
   MainThread* mainThread = (this == Threads.main() ? Threads.main() : nullptr);
-
+  bool failedHigh = false;
+  
   std::memset(ss-4, 0, 7 * sizeof(Stack));
 
   bestValue = delta = alpha = -VALUE_INFINITE;
@@ -440,15 +441,20 @@ void Thread::search() {
                       mainThread->failedLow = true;
                       Signals.stopOnPonderhit = false;
                   }
+		  failedHigh = false;
               }
-              else if (bestValue >= beta)
+              else if (bestValue >= beta && !failedHigh)
               {
                   alpha = (alpha + beta) / 2;
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
+		  failedHigh = true;
               }
               else
-                  break;
-
+	      {
+		failedHigh = false;
+		break;
+	      }
+	      
               delta += delta / 4 + 5;
 
               assert(alpha >= -VALUE_INFINITE && beta <= VALUE_INFINITE);
