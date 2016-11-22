@@ -314,7 +314,8 @@ void MainThread::search() {
               bestThread = th;
   }
 
-  previousScore = bestThread->rootMoves[0].score;
+  if( !this->easyMovePlayed)
+     previousScore = bestThread->rootMoves[0].score;
 
   // Send new PV when needed
   if (bestThread != this)
