@@ -23,6 +23,7 @@
 #include "search.h"
 #include "timeman.h"
 #include "uci.h"
+#include <cfloat>
 
 TimeManagement Time; // Our global time management object
 
@@ -102,8 +103,6 @@ void TimeManagement::init(Search::LimitsType& limits, Color us, int ply) {
       limits.npmsec = npmsec;
   }
 
-  
-  startTime = limits.startTime;
   optimumTime = maximumTime = std::max(limits.time[us], minThinkingTime);
 
   const int MaxMTG = limits.movestogo ? std::min(limits.movestogo, MoveHorizon) : MoveHorizon;
@@ -126,10 +125,4 @@ void TimeManagement::init(Search::LimitsType& limits, Color us, int ply) {
       optimumTime = std::min(t1, optimumTime);
       maximumTime = std::min(t2, maximumTime);
   }
-
-  startTime = limits.startTime;
-  optimumTime = remaining(limits.time[us], limits.inc[us], moveOverhead,
-                          limits.movestogo, moveNum, ponder, OptimumTime);
-  maximumTime = remaining(limits.time[us], limits.inc[us], moveOverhead,
-                          limits.movestogo, moveNum, ponder, MaxTime);
 }
