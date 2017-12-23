@@ -302,6 +302,8 @@ void Thread::search() {
   {
       mainThread->failedLow = false;
       mainThread->bestMoveChanges = 0;
+      mainThread->exitTime =  Limits.use_time_management() ? 0 : INT_MAX;
+      mainThread->completedBestMove = MOVE_NONE;
   }
 
   size_t multiPV = Options["MultiPV"];
@@ -392,6 +394,11 @@ void Thread::search() {
                       Threads.stopOnPonderhit = false;
                   }
               }
+	      else if (   bestValue >= beta
+	               && ( (  !mainThread
+			       && Threads.main()->completedBestMove != rootMoves[0].pv[0])
+			    || Time.elapsed() <= Threads.main() -> exitTime * 2/5))
+		beta = std::min(bestValue + delta, VALUE_INFINITE);
               else
                   break;
 
@@ -422,7 +429,9 @@ void Thread::search() {
           && VALUE_MATE - bestValue <= 2 * Limits.mate)
           Threads.stop = true;
 
-      if (!mainThread)
+      if (mainThread)
+          mainThread->completedBestMove = lastBestMove;
+      else
           continue;
 
       // If skill level is enabled and time is up, pick a sub-optimal best move
@@ -455,9 +464,10 @@ void Thread::search() {
                   if (lastBestMoveDepth * i < completedDepth && !thinkHard)
                      timeReduction *= 1.3;
               unstablePvFactor *=  std::pow(mainThread->previousTimeReduction, 0.51) / timeReduction;
+              mainThread->exitTime = Time.optimum() * unstablePvFactor * improvingFactor / 628;
 
               if (   rootMoves.size() == 1
-                  || Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 628)
+                  || Time.elapsed() > mainThread->exitTime)
               {
                   // If we are allowed to ponder do not stop the search now but
                   // keep pondering until the GUI sends "ponderhit" or "stop".
