@@ -302,7 +302,7 @@ void Thread::search() {
   {
       mainThread->failedLow = false;
       mainThread->bestMoveChanges = 0;
-      mainThread->exitTime =  Limits.use_time_management() ? 0 : INT_MAX;
+      mainThread->exitTime =   INT_MAX/2;
       mainThread->completedBestMove = MOVE_NONE;
   }
 
@@ -328,7 +328,6 @@ void Thread::search() {
           if (((rootDepth / ONE_PLY + rootPos.game_ply() + skipPhase[i]) / skipSize[i]) % 2)
               continue;
       }
-
       // Age out PV variability metric
       if (mainThread)
           mainThread->bestMoveChanges *= 0.505, mainThread->failedLow = false;
