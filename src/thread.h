@@ -82,9 +82,10 @@ struct MainThread : public Thread {
 
   void search() override;
   void check_time();
+  int exit_time(Value&, Depth& );
 
   bool failedLow;
-  double bestMoveChanges, previousTimeReduction;
+  double bestMoveChanges, timeReduction, previousTimeReduction;
   Value previousScore;
   int callsCnt;
 };

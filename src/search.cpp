@@ -289,7 +289,6 @@ void Thread::search() {
   Move  lastBestMove = MOVE_NONE;
   Depth lastBestMoveDepth = DEPTH_ZERO;
   MainThread* mainThread = (this == Threads.main() ? Threads.main() : nullptr);
-  double timeReduction = 1.0;
 
   std::memset(ss-4, 0, 7 * sizeof(Stack));
   for (int i = 4; i > 0; i--)
@@ -392,8 +391,11 @@ void Thread::search() {
                       Threads.stopOnPonderhit = false;
                   }
               }
-              else if (bestValue >= beta)
-                  beta = std::min(bestValue + delta, VALUE_INFINITE);
+              else if ( bestValue >= beta
+		       && (   !mainThread
+			   ||  Time.elapsed() < mainThread->exit_time(beta, lastBestMoveDepth)
+                           || !Limits.use_time_management()))
+                        beta = std::min(bestValue + delta, VALUE_INFINITE);
               else
                   break;
 
@@ -438,28 +440,8 @@ void Thread::search() {
           {
               // Stop the search if only one legal move is available, or if all
               // of the available time has been used
-              const int F[] = { mainThread->failedLow,
-                                bestValue - mainThread->previousScore };
-              int improvingFactor = std::max(229, std::min(715, 357 + 119 * F[0] - 6 * F[1]));
-
-              Color us = rootPos.side_to_move();
-              bool thinkHard =    bestValue == VALUE_DRAW
-                               && Limits.time[us] - Time.elapsed() > Limits.time[~us]
-                               && ::pv_is_draw(rootPos);
-
-              double unstablePvFactor = 1 + mainThread->bestMoveChanges + thinkHard;
-
-              // if the bestMove is stable over several iterations, reduce time for this move,
-              // the longer the move has been stable, the more.
-              // Use part of the gained time from a previous stable move for the current move.
-              timeReduction = 1;
-              for (int i : {3, 4, 5})
-                  if (lastBestMoveDepth * i < completedDepth && !thinkHard)
-                     timeReduction *= 1.3;
-              unstablePvFactor *=  std::pow(mainThread->previousTimeReduction, 0.51) / timeReduction;
-
               if (   rootMoves.size() == 1
-                  || Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 628)
+                  || Time.elapsed() > mainThread->exit_time(bestValue, lastBestMoveDepth))
               {
                   // If we are allowed to ponder do not stop the search now but
                   // keep pondering until the GUI sends "ponderhit" or "stop".
@@ -475,7 +457,7 @@ void Thread::search() {
   if (!mainThread)
       return;
 
-  mainThread->previousTimeReduction = timeReduction;
+  mainThread->previousTimeReduction = mainThread->timeReduction;
 
   // If skill level is enabled, swap best PV line with the sub-optimal one
   if (skill.enabled())
@@ -1509,7 +1491,30 @@ moves_loop: // When in check search starts from here
             Threads.stop = true;
   }
 
+int MainThread::exit_time(Value& bestValue, Depth& lastBestMoveDepth){
+  
+   const int F[] = { failedLow, bestValue - previousScore };
+   int improvingFactor = std::max(229, std::min(715, 357 + 119 * F[0] - 6 * F[1]));
 
+   Color us = rootPos.side_to_move();
+   bool thinkHard =    bestValue == VALUE_DRAW
+                               && Limits.time[us] - Time.elapsed() > Limits.time[~us]
+                               && ::pv_is_draw(rootPos);
+
+   double unstablePvFactor = 1 + bestMoveChanges + thinkHard;
+
+   // if the bestMove is stable over several iterations, reduce time for this move,
+   // the longer the move has been stable, the more.
+   // Use part of the gained time from a previous stable move for the current move.
+        timeReduction = 1;
+        for (int i : {3, 4, 5})
+             if (lastBestMoveDepth * i < completedDepth && !thinkHard)
+                     timeReduction *= 1.3;
+              unstablePvFactor *=  std::pow(previousTimeReduction, 0.51) / timeReduction;
+
+	      return( Time.optimum() * unstablePvFactor * improvingFactor / 628 );  
+}
+  
 /// UCI::pv() formats PV information according to the UCI protocol. UCI requires
 /// that all (if any) unsearched PV lines are sent using a previous search score.
 
