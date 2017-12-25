@@ -302,6 +302,7 @@ void Thread::search() {
   {
       mainThread->failedLow = false;
       mainThread->bestMoveChanges = 0;
+      mainThread->completedBestMove = MOVE_NONE;
   }
 
   size_t multiPV = Options["MultiPV"];
@@ -392,7 +393,10 @@ void Thread::search() {
                       Threads.stopOnPonderhit = false;
                   }
               }
-              else if (bestValue >= beta)
+              else if (   bestValue >= beta
+                        && ( (  !mainThread
+                              && Threads.main()->completedBestMove != rootMoves[0].pv[0])
+                            || rootDepth < 13 ))
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
               else
                   break;
@@ -424,8 +428,10 @@ void Thread::search() {
           && VALUE_MATE - bestValue <= 2 * Limits.mate)
           Threads.stop = true;
 
-      if (!mainThread)
-          continue;
+      if (mainThread)
+          mainThread->completedBestMove = lastBestMove;
+      else
+         continue;
 
       // If skill level is enabled and time is up, pick a sub-optimal best move
       if (skill.enabled() && skill.time_to_pick(rootDepth))
