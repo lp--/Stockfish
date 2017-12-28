@@ -282,6 +282,7 @@ void Thread::search() {
   Value bestValue, alpha, beta, delta;
   MainThread* mainThread = (this == Threads.main() ? Threads.main() : nullptr);
   double timeReduction = 1.0;
+  Depth lastBestMoveDepth = DEPTH_ZERO;
 
   std::memset(ss-4, 0, 7 * sizeof(Stack));
   for (int i = 4; i > 0; i--)
@@ -289,13 +290,12 @@ void Thread::search() {
 
   bestValue = delta = alpha = -VALUE_INFINITE;
   beta = VALUE_INFINITE;
+  lastBestMove = MOVE_NONE;
 
   if (mainThread)
   {
       mainThread->failedLow = false;
       mainThread->bestMoveChanges = 0;
-      mainThread->lastBestMove = MOVE_NONE;
-      mainThread->lastBestMoveDepth = DEPTH_ZERO;
   }
 
   size_t multiPV = Options["MultiPV"];
@@ -386,7 +386,9 @@ void Thread::search() {
                       Threads.stopOnPonderhit = false;
                   }
               }
-              else if (bestValue >= beta && Threads.main()->lastBestMove != rootMoves[0].pv[0])
+              else if (   bestValue >= beta
+                       && (   Threads.main()->lastBestMove != rootMoves[0].pv[0]
+                           || lastBestMove != rootMoves[0].pv[0] ))
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
               else
                   break;
@@ -407,9 +409,9 @@ void Thread::search() {
       if (!Threads.stop)
           completedDepth = rootDepth;
 
-      if (mainThread && rootMoves[0].pv[0] != mainThread->lastBestMove) {
-         mainThread->lastBestMove = rootMoves[0].pv[0];
-         mainThread->lastBestMoveDepth = rootDepth;
+      if (rootMoves[0].pv[0] != lastBestMove) {
+         lastBestMove = rootMoves[0].pv[0];
+         lastBestMoveDepth = rootDepth;
       }
 
       // Have we found a "mate in x"?
@@ -448,7 +450,7 @@ void Thread::search() {
               // Use part of the gained time from a previous stable move for the current move.
               timeReduction = 1;
               for (int i : {3, 4, 5})
-                  if (mainThread->lastBestMoveDepth * i < completedDepth && !thinkHard)
+                  if (lastBestMoveDepth * i < completedDepth && !thinkHard)
                      timeReduction *= 1.3;
               unstablePvFactor *=  std::pow(mainThread->previousTimeReduction, 0.51) / timeReduction;
 

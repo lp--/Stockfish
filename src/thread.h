@@ -67,6 +67,7 @@ public:
   Position rootPos;
   Search::RootMoves rootMoves;
   Depth rootDepth, completedDepth;
+  Move lastBestMove;
   CounterMoveHistory counterMoves;
   ButterflyHistory mainHistory;
   CapturePieceToHistory captureHistory;
@@ -86,8 +87,6 @@ struct MainThread : public Thread {
   bool failedLow;
   double bestMoveChanges, previousTimeReduction;
   Value previousScore;
-  Move lastBestMove;
-  Depth lastBestMoveDepth;
   int callsCnt;
 };
 
