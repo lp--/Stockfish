@@ -280,8 +280,6 @@ void Thread::search() {
 
   Stack stack[MAX_PLY+7], *ss = stack+4; // To reference from (ss-4) to (ss+2)
   Value bestValue, alpha, beta, delta;
-  Move  lastBestMove = MOVE_NONE;
-  Depth lastBestMoveDepth = DEPTH_ZERO;
   MainThread* mainThread = (this == Threads.main() ? Threads.main() : nullptr);
   double timeReduction = 1.0;
 
@@ -296,6 +294,8 @@ void Thread::search() {
   {
       mainThread->failedLow = false;
       mainThread->bestMoveChanges = 0;
+      mainThread->lastBestMove = MOVE_NONE;
+      mainThread->lastBestMoveDepth = DEPTH_ZERO;
   }
 
   size_t multiPV = Options["MultiPV"];
@@ -386,7 +386,7 @@ void Thread::search() {
                       Threads.stopOnPonderhit = false;
                   }
               }
-              else if (bestValue >= beta)
+              else if (bestValue >= beta && Threads.main()->lastBestMove != rootMoves[0].pv[0])
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
               else
                   break;
@@ -407,9 +407,9 @@ void Thread::search() {
       if (!Threads.stop)
           completedDepth = rootDepth;
 
-      if (rootMoves[0].pv[0] != lastBestMove) {
-         lastBestMove = rootMoves[0].pv[0];
-         lastBestMoveDepth = rootDepth;
+      if (mainThread && rootMoves[0].pv[0] != mainThread->lastBestMove) {
+         mainThread->lastBestMove = rootMoves[0].pv[0];
+         mainThread->lastBestMoveDepth = rootDepth;
       }
 
       // Have we found a "mate in x"?
@@ -448,12 +448,12 @@ void Thread::search() {
               // Use part of the gained time from a previous stable move for the current move.
               timeReduction = 1;
               for (int i : {3, 4, 5})
-                  if (lastBestMoveDepth * i < completedDepth && !thinkHard)
+                  if (mainThread->lastBestMoveDepth * i < completedDepth && !thinkHard)
                      timeReduction *= 1.3;
               unstablePvFactor *=  std::pow(mainThread->previousTimeReduction, 0.51) / timeReduction;
 
               if (   rootMoves.size() == 1
-                  || Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 628)
+                  || Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 600)
               {
                   // If we are allowed to ponder do not stop the search now but
                   // keep pondering until the GUI sends "ponderhit" or "stop".
