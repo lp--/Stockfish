@@ -88,7 +88,7 @@ struct MainThread : public Thread {
   Value previousScore;
   Move lastBestMove;
   Depth lastBestMoveDepth;
-  int callsCnt;
+  int callsCnt, exitTime;
 };
 
 

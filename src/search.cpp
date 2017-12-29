@@ -296,6 +296,7 @@ void Thread::search() {
       mainThread->bestMoveChanges = 0;
       mainThread->lastBestMove = MOVE_NONE;
       mainThread->lastBestMoveDepth = DEPTH_ZERO;
+      mainThread->exitTime = INT_MAX/2;
   }
 
   size_t multiPV = Options["MultiPV"];
@@ -386,7 +387,9 @@ void Thread::search() {
                       Threads.stopOnPonderhit = false;
                   }
               }
-              else if (bestValue >= beta && Threads.main()->lastBestMove != rootMoves[0].pv[0])
+              else if (   bestValue >= beta
+                       && (   Threads.main()->lastBestMove != rootMoves[0].pv[0]
+			      || Time.elapsed() <= Threads.main()-> exitTime * 2/5 ))
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
               else
                   break;
@@ -451,9 +454,10 @@ void Thread::search() {
                   if (mainThread->lastBestMoveDepth * i < completedDepth && !thinkHard)
                      timeReduction *= 1.3;
               unstablePvFactor *=  std::pow(mainThread->previousTimeReduction, 0.51) / timeReduction;
+              mainThread->exitTime = Time.optimum() * unstablePvFactor * improvingFactor / 618;
 
               if (   rootMoves.size() == 1
-                  || Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 600)
+                  || Time.elapsed() > mainThread->exitTime)
               {
                   // If we are allowed to ponder do not stop the search now but
                   // keep pondering until the GUI sends "ponderhit" or "stop".
