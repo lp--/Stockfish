@@ -391,7 +391,7 @@ void Thread::search() {
               else if (   bestValue >= beta
                        && (   lastBestMove != rootMoves[0].pv[0]
                            || analysisMode
-                           || beta > 400 ))
+                           || beta > 1000 ))
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
               else
                   break;
