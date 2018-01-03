@@ -308,6 +308,8 @@ void Thread::search() {
 
   multiPV = std::min(multiPV, rootMoves.size());
 
+  bool analysisMode = multiPV > 1 || !Limits.use_time_management();
+
   // Iterative deepening loop until requested to stop or the target depth is reached
   while (   (rootDepth += ONE_PLY) < DEPTH_MAX
          && !Threads.stop
@@ -386,7 +388,10 @@ void Thread::search() {
                       Threads.stopOnPonderhit = false;
                   }
               }
-              else if (bestValue >= beta)
+              else if (   bestValue >= beta
+                       && (   lastBestMove != rootMoves[0].pv[0]
+                           || analysisMode
+                           || beta > 400 ))
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
               else
                   break;
@@ -453,7 +458,7 @@ void Thread::search() {
               unstablePvFactor *=  std::pow(mainThread->previousTimeReduction, 0.51) / timeReduction;
 
               if (   rootMoves.size() == 1
-                  || Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 628)
+                  || Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 600)
               {
                   // If we are allowed to ponder do not stop the search now but
                   // keep pondering until the GUI sends "ponderhit" or "stop".
