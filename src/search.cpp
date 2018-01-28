@@ -278,7 +278,7 @@ void MainThread::search() {
 void Thread::search() {
 
   Stack stack[MAX_PLY+7], *ss = stack+4; // To reference from (ss-4) to (ss+2)
-  Value bestValue, alpha, beta, delta;
+  Value bestValue, excludedValue, alpha, beta, delta;
   Move  lastBestMove = MOVE_NONE;
   Depth lastBestMoveDepth = DEPTH_ZERO;
   MainThread* mainThread = (this == Threads.main() ? Threads.main() : nullptr);
@@ -386,7 +386,15 @@ void Thread::search() {
                   }
               }
               else if (bestValue >= beta)
+              {
+                  ss->excludedMove = rootMoves[0].pv[0];
+                  excludedValue = ::search<PV>(rootPos, ss, beta, beta + 1, rootDepth, false, false);
+                  ss->excludedMove = MOVE_NONE;
+                  if( excludedValue <= beta )
+                     break;
+
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
+              }
               else
                   break;
 
@@ -452,7 +460,7 @@ void Thread::search() {
               unstablePvFactor *=  std::pow(mainThread->previousTimeReduction, 0.51) / timeReduction;
 
               if (   rootMoves.size() == 1
-                  || Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 628)
+                  || Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 570)
               {
                   // If we are allowed to ponder do not stop the search now but
                   // keep pondering until the GUI sends "ponderhit" or "stop".
