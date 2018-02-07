@@ -28,14 +28,20 @@
 
 TimeManagement Time; // Our global time management object
 
+
+  int _MaxRatio    = 699;  // When in trouble, we can step over reserved time with this ratio
+  int _StealRatio  =  34;  // However we must not steal time from remaining moves over this ratio
+  int _XScale = 612;
+  int _XShift = 639;
+  int _Skew   = 177;
+
+  TUNE(_MaxRatio, _StealRatio, _XScale, _XShift, _Skew);
+
 namespace {
 
   enum TimeType { OptimumTime, MaxTime };
 
   const int MoveHorizon   = 50;   // Plan time management at most this many moves ahead
-  const double MaxRatio   = 7.3; // When in trouble, we can step over reserved time with this ratio
-  const double StealRatio = 0.34; // However we must not steal time from remaining moves over this ratio
-
 
   // move_importance() is a skew-logistic function based on naive statistical
   // analysis of "how many games are still undecided after n half-moves". Game
@@ -44,15 +50,18 @@ namespace {
 
   double move_importance(int ply) {
 
-    const double XScale = 6.85;
-    const double XShift = 64.5;
-    const double Skew   = 0.171;
+    const double XScale = _XScale/100.;
+    const double XShift = _XShift/10.;
+    const double Skew   = _Skew/1000.;
 
     return pow((1 + exp((ply - XShift) / XScale)), -Skew) + DBL_MIN; // Ensure non-zero
   }
 
   template<TimeType T>
   int remaining(int myTime, int movesToGo, int ply, int slowMover) {
+
+   double StealRatio = _StealRatio / 100.0;
+   double MaxRatio   = _MaxRatio   / 100.0;
 
     const double TMaxRatio   = (T == OptimumTime ? 1 : MaxRatio);
     const double TStealRatio = (T == OptimumTime ? 0 : StealRatio);

@@ -182,6 +182,8 @@ void Search::clear() {
   Threads.clear();
 }
 
+int _MAX = 789, _MIN = 237, _X1 = 274, _X2 = 109, _X3 = 60, _X4 = 128, _X5 = 516, _BM = 515 ;
+TUNE(_MAX, _MIN, _X1, _X2, _X3, _X4, _X5, _BM);
 
 /// MainThread::search() is called by the main thread when the program receives
 /// the UCI 'go' command. It searches from the root position and outputs the "bestmove".
@@ -326,7 +328,7 @@ void Thread::search() {
 
       // Age out PV variability metric
       if (mainThread)
-          mainThread->bestMoveChanges *= 0.517, mainThread->failedLow = false;
+          mainThread->bestMoveChanges *= _BM/1000., mainThread->failedLow = false;
 
       // Save the last iteration's scores before first PV line is searched and
       // all the move scores except the (new) PV are set to -VALUE_INFINITE.
@@ -444,22 +446,22 @@ void Thread::search() {
           {
               const int F[] = { mainThread->failedLow,
                                 bestValue - mainThread->previousScore };
-
-              int improvingFactor = std::max(246, std::min(832, 306 + 119 * F[0] - 6 * F[1]));
+	      
+              int improvingFactor = std::max(_MIN, std::min(_MAX, _X1 + _X2 * F[0] - _X3 * F[1]/10 ));
 
               // If the bestMove is stable over several iterations, reduce time accordingly
               timeReduction = 1.0;
               for (int i : {3, 4, 5})
                   if (lastBestMoveDepth * i < completedDepth)
-                     timeReduction *= 1.25;
+                     timeReduction *= _X4/100.;
 
               // Use part of the gained time from a previous stable move for the current move
               double unstablePvFactor = 1.0 + mainThread->bestMoveChanges;
-              unstablePvFactor *= std::pow(mainThread->previousTimeReduction, 0.528) / timeReduction;
+              unstablePvFactor *= std::pow(mainThread->previousTimeReduction, _X5/1000.) / timeReduction;
 
               // Stop the search if we have only one legal move, or if available time elapsed
               if (   rootMoves.size() == 1
-                  || Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 581)
+                  || Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 562)
               {
                   // If we are allowed to ponder do not stop the search now but
                   // keep pondering until the GUI sends "ponderhit" or "stop".
