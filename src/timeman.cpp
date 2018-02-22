@@ -29,11 +29,11 @@
 TimeManagement Time; // Our global time management object
 
 
-  int _MaxRatio    = 709;  // When in trouble, we can step over reserved time with this ratio
+  int _MaxRatio    = 697;  // When in trouble, we can step over reserved time with this ratio
   int _StealRatio  =  35;  // However we must not steal time from remaining moves over this ratio
-  int _XScale = 764;
-  int _XShift = 584;
-  int _Skew   = 183;
+  int _XScale = 736;
+  int _XShift = 630;
+  int _Skew   = 170;
 
   TUNE(_MaxRatio, _StealRatio, _XScale, _XShift, _Skew);
 

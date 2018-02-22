@@ -174,7 +174,7 @@ void Search::clear() {
   Threads.clear();
 }
 
-int _MAX = 715, _MIN = 229, _X1 = 357, _X2 = 119, _X3 = 60, _X4 = 130, _X5 = 510, _BM = 505;
+int _MAX = 808, _MIN = 256, _X1 = 354, _X2 = 125, _X3 = 60, _X4 = 123, _X5 = 510, _BM = 540;
 TUNE(_MAX, _MIN, _X1, _X2, _X3, _X4, _X5, _BM);
 
 /// MainThread::search() is called by the main thread when the program receives
@@ -450,7 +450,7 @@ void Thread::search() {
 
               // Stop the search if we have only one legal move, or if available time elapsed
               if (   rootMoves.size() == 1
-                  || Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 605)
+                  || Time.elapsed() > Time.optimum() * unstablePvFactor * improvingFactor / 633)
               {
                   // If we are allowed to ponder do not stop the search now but
                   // keep pondering until the GUI sends "ponderhit" or "stop".
