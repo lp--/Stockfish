@@ -33,7 +33,7 @@ namespace {
   enum TimeType { OptimumTime, MaxTime };
 
   const int MoveHorizon   = 50;   // Plan time management at most this many moves ahead
-  const double MaxRatio   = 7.3; // When in trouble, we can step over reserved time with this ratio
+  const double MaxRatio   = 7.56; // When in trouble, we can step over reserved time with this ratio
   const double StealRatio = 0.34; // However we must not steal time from remaining moves over this ratio
 
 
@@ -44,9 +44,9 @@ namespace {
 
   double move_importance(int ply) {
 
-    const double XScale = 6.85;
-    const double XShift = 64.5;
-    const double Skew   = 0.171;
+    const double XScale = 5.78;
+    const double XShift = 61.3;
+    const double Skew   = 0.176;
 
     return pow((1 + exp((ply - XShift) / XScale)), -Skew) + DBL_MIN; // Ensure non-zero
   }
