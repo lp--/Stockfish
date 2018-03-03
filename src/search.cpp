@@ -448,14 +448,11 @@ void Thread::search() {
               int improvingFactor = std::max(246, std::min(832, 306 + 119 * F[0] - 6 * F[1]));
 
               // If the bestMove is stable over several iterations, reduce time accordingly
-              timeReduction = 1.0;
-              for (int i : {3, 4, 5})
-                  if (lastBestMoveDepth * i < completedDepth)
-                     timeReduction *= 1.25;
+              timeReduction = pow( 0.8,  std::max( 0.,  double(completedDepth)/double(lastBestMoveDepth) -2 ));
 
               // Use part of the gained time from a previous stable move for the current move
               double unstablePvFactor = 1.0 + mainThread->bestMoveChanges;
-              unstablePvFactor *= std::pow(mainThread->previousTimeReduction, 0.528) / timeReduction;
+              unstablePvFactor *= timeReduction / std::pow(mainThread->previousTimeReduction, 0.528);
 
               // Stop the search if we have only one legal move, or if available time elapsed
               if (   rootMoves.size() == 1
